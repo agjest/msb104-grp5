@@ -1,0 +1,262 @@
+---
+title: "ag comments"
+format: html
+editor: source
+lang: nb
+execute: 
+  echo: true
+---
+
+```{r}
+#| label: setup
+#| eval: true
+#| message: false
+library(tidyverse)
+library(flextable)
+library(readxl)
+library(janitor)
+library(stringr)
+options(paged.print = FALSE)
+```
+
+## General Comments
+
+-   Dette er et fint stykke arbeid nå
+-   Dokumentet er reproduserbart. Bra!
+-   Så vidt jeg kan se har dere svart på alt oppgaven ber om
+-   Noe av koden er litt kaotisk, men den gir riktig svar
+-   Å gå gjennom koden for å se om man forenkle den, etter at man har fått ting til å virke, er ofte en lærerik øvelse.
+-   Jeg vil anbefale dere å bruke Quarto sitt system for «caption» (bilde/tabell tekst) og kryssreferanser
+-   I figuren «Tidsutvikling i regional ulikhet (Gini) innen NUTS−2 (NUTS−3 som enheter)» synes jeg punktene blir litt for dominerende. Jeg vil anbefale å enten droppe dem eller redusere størrelsen.
+-   En del libraries laster dere flere ganger helt unødvendig. Legg dem i setup chunk-en og la det være med det. Denne blir sjekket hver gang man kjører en chunk.
+-   Vær også oppmerksom på pakkene i tidyverse. Det er helt unødvendig å laste f.eks dplyr når tidyverse er lastet. dplyr er en del av tidyverse.
+-   Dere ser ut til å ha brukt KI på en fornuftig måte.
+
+## Tips and Tricks
+
+-   Vurder også å bruke `flextable` på tabellene i den endelige artikkelen. Kombinert med Quartos caption og kryssreferanser gir det et profft preg som en f.eks ser i @tbl-mtcars.
+
+```{r}
+#| label: tbl-mtcars
+#| tbl-cap: Sentral informasjon om noen bilmodeller.
+#| tbl-cap-location: bottom
+#| echo: false
+#| eval: true
+mtcars[1:10, 1:5] |> 
+  as_flextable(
+    show_coltype = FALSE,
+    max_row = 20
+  ) |> 
+  line_spacing(space = 0.3) |> 
+  delete_part("footer")
+```
+
+## Forslag til enkel kode for datasett
+
+Her er det viktig å holde styr på hvilket nivå variablene angår. Merker derfor alle med n3 (NUTS3), n2 (NUTS2), n1 (NUTS1) og nc (Country).
+
+```{r}
+#| eval: false
+# label: setup
+library(tidyverse)
+library(readxl)
+library(janitor)
+library(stringr)
+library(flextable)
+options(paged.print = FALSE)
+```
+
+
+# Del A: Subnasjonalt BNP og BNP per innbygger
+
+## Beregning av BNP per innbygger (GDP per Capita Calculation)
+
+```{r}
+#| eval: false
+#| message: false
+# laste inn datasett 1, BNP i millioner euro:
+gdp <- read_excel(
+  path = "../nama_10r_3gdp__custom_18648452_spreadsheet_uten_flags.xlsx", 
+  na = ":", 
+  # Dropper første rekken i df1 som bare skaper trøbbel
+  skip = 1
+  ) |> 
+  set_names(
+    nm = c("Geo_Kode", "Geo_Navn", paste0("y", 2000:2023))
+    ) |> 
+  # Dropper de tre siste linjene
+  head(n = -3) |> 
+  pivot_longer(
+    cols = y2000:y2023,
+    names_to = "År", 
+    names_prefix = "y",
+    values_to = "BNP_mill_Euro"
+    ) |> 
+  # Det er noen samleregioner ZZZ som bare skaper trøbbel
+  filter(!(str_sub(Geo_Kode, 3, 5) == "ZZZ")) |> 
+  rename(
+    gdp_n3 = BNP_mill_Euro
+  ) |> 
+  mutate(
+    gdp_n3 = gdp_n3 * 1e6
+  )
+```
+
+
+```{r}
+#| eval: false
+#| paged.print: false
+# vis de første radene
+gdp |>  head(n = 5)
+```
+
+```{r}
+#| eval: false
+gdp |>  tail(n = 5)
+```
+
+
+```{r}
+#| eval: false
+#| message: false
+pop <- read_excel(
+  path = "../demo_r_pjanaggr3__custom_18648204_spreadsheet_uten_flags.xlsx", 
+  na = ":", 
+  skip = 1
+  ) |> 
+  set_names(
+    nm = c("Geo_Kode", "Geo_Navn", paste0("y", 2000:2023))
+  ) |> 
+  # Dropper de tre siste rekkene
+  head(n = -3) |> 
+  pivot_longer(
+    cols = y2000:y2023,
+    names_to = "År", 
+    names_prefix = "y",
+    values_to = "pop_n3"
+    ) |> 
+  # Det er noen samleregioner ZZZ som bare skaper trøbbel
+  filter(!(str_sub(Geo_Kode, 3, 5) == "ZZZ"))
+```
+
+```{r}
+#| eval: false
+pop |> 
+  head(n = 3)
+```
+
+```{r}
+#| eval: false
+pop |> 
+  tail(n = 3)
+```
+
+Slår sammen gdp og pop til gdp_pop. Lage kategorivariablene n2 (NUTS2), n1 (NUTS1) og nc (Country). Gjør om gdp til Euro istedenfor mill. Euro. Beregner gdp_pc (GDP per capita i NUTS3 regioner). Filtrerer ut observasjoner der vi mangler data.
+
+```{r}
+#| eval: false
+gdp_pop <- gdp |> 
+  left_join(pop, by = join_by(Geo_Kode, Geo_Navn, År)) |> 
+  mutate(
+    # gdp per capita
+    gdp_pc_n3 = gdp_n3 / pop_n3,
+    n2 = str_sub(Geo_Kode, start = 1, end = 4),
+    n1 = str_sub(Geo_Kode, start = 1, end = 3),
+    nc = str_sub(Geo_Kode, start = 1, end = 2),
+    .before = Geo_Navn
+  ) %>% 
+  filter(complete.cases(.))
+```
+
+### Beregning av Gini
+
+Beregner Gini for NUTS2 regioner (gini_n2). Finner også antall NUTS3 i hver NUTS2, total gdp i NUTS2 regioner (gdp_n2) og total befolkning i NUTS2 regioner (pop_n2). Beregner ogs GDP per Capita for NUTS 2 regioner.
+
+```{r}
+#| eval: false
+gdp_pop_n2 <- gdp_pop  %>%  
+  group_by(n2, År) |> 
+  summarise(
+    gini_n2 = dineq::gini.wtd(gdp_pc_n3, weights = pop_n3),
+    num_n3 = n(),
+    gdp_n2 = sum(gdp_n3),
+    pop_n2 = sum(pop_n3),
+    gdp_pc_n2 = gdp_n2 / pop_n2,
+    .groups = "drop"
+  )
+```
+
+Legger gini_n2, num_n3, gdp_n2, pop_n2 og gdp_pc_n2 til gdp_pop. De NUTS3 regionene som er i samme NUTS2 region vil ha samme verdi for disse variablene.
+
+```{r}
+#| eval: false
+gdp_pop <- gdp_pop |> 
+  left_join(gdp_pop_n2, by = join_by(n2, År))
+```
+
+Gjør tilsvarende for NUTS1 og Country så har vi alle data. Regner Gini utfra gdp_pc_n3. Merk at num_n2 er antall NUTS2 regioner i NUTS1 regionene
+
+```{r}
+#| eval: false
+gdp_pop_n1 <- gdp_pop  %>%  
+  group_by(n1, År) |> 
+  summarise(
+    gini_n1 = dineq::gini.wtd(gdp_pc_n3, weights = pop_n3),
+    num_n2 = n(),
+    gdp_n1 = sum(gdp_n3),
+    pop_n1 = sum(pop_n3),
+    gdp_pc_n1 = gdp_n1 / pop_n1,
+    .groups = "drop"
+  )
+```
+
+```{r}
+#| eval: false
+gdp_pop_nc <- gdp_pop  %>%  
+  group_by(nc, År) |> 
+  summarise(
+    gini_nc = dineq::gini.wtd(gdp_pc_n3, weights = pop_n3),
+    num_n1 = n(),
+    gdp_nc = sum(gdp_n3),
+    pop_nc = sum(pop_n3),
+    gdp_pc_nc = gdp_nc / pop_nc,
+    .groups = "drop"
+  )
+```
+
+```{r}
+#| eval: false
+gdp_pop <- gdp_pop |> 
+  left_join(gdp_pop_n1, by = join_by(n1, År)) |> 
+  left_join(gdp_pop_nc, by = join_by(nc, År))
+```
+
+```{r}
+#| eval: false
+gdp_pop |> 
+  head(n = 3)
+```
+
+-   num_n2: number of NUTS3 regions in each NUTS2
+-   num_n1: number of NUTS3 regions in each NUTS1
+-   num_nc: number of NUTS3 regions in each country
+
+```{r}
+#| eval: false
+gdp_pop <- gdp_pop |> 
+  select(Geo_Kode, Geo_Navn, n2:År, everything())
+```
+
+Alle dataene ligger nå fint ordnet i `gdp_pop` og det er denne vi trenger ta vare på for videre arbeid.
+
+```{r}
+#| eval: false
+save(
+  gdp_pop,
+  file = "gdp_pop.RData"
+)
+```
+
+
+
+

@@ -1,0 +1,25 @@
+---
+title: "ag comments Ass3"
+format: html
+editor: visual
+---
+
+## General comments
+
+-   The document is reproducible. Good!
+-   Stusser litt på det lave antall regioner dere kommer frem til.
+    -   Jeg finner følgende antall NUTS2 regioner:
+    -   AT: 9, CZ: 8, EE: 1, ES: 19 og SI: 2
+    -   Jeg finner følgende antall NUTS1 regioner:
+    -   AT: 3, CZ: 1, EE: 1, ES: 7 og SI: 1
+-   For figur rett før *1.1 Drøfting av delutvalgsanalyse* blir veldig mye drevet av en observasjon opp i høyre hjørne.
+-   Start *2.1 Funksjonell form-utforskning*. Fin referanse til Kuznets og setter det hele i perspektiv.
+-   Det er her unødvendig å lage nye variabler. R kan gjøre dette rett i formula-uttrykket.
+-   Angående tabell nederst side 8, Vær oppmerksom på at R\^2 ikke kan sammenlignes mellom modeller der vi har utført transformasjoner av variabler. Så her kan man *ikke* konkludere med at Kubisk er bedre enn de andre (noe dere heller ikke gjør, men tabellen oppfordrer til slike sammenligninger)
+-   *2.2 Estimering og visualisering* fin tilknytning til Kuznets
+-   Figur rett før *2.3 Tolkning av resultater*. Fint plott, men igjen mye drevet av obs. opp i høyre hjørne.
+    -   Nederst side 10. «Den kubiske modellen beskriver dataene best etter tradisjonelle mål (R² og AIC), …». Her sammenligner dere og er på litt tynn grunn ;-)
+-   Ser ikke ut som heteroskedastisitet er noe problem i modellen dere har. Det er et klart problem for mine modeller på samme data.
+-   Fin diskusjon av kausalitet. Sikkert god hjelp av KI, men det er helt OK.
+-   Innledning *4.1 Panelestimeringsoppgave* fint formulert.
+-   Dere bruker lm() med faktor variabler istedenfor plm(model = "within", effect = "individual"). Helt OK og skal gi samme svar men sjekk gjerne ut plm(), pdata.frame() og summary(fixef(<min_p_model>, effect = "individual")) også.

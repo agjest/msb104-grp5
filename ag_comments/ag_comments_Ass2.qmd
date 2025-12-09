@@ -1,0 +1,141 @@
+---
+title: "ag comments ass2"
+format: html
+editor: source
+lang: nb
+---
+
+```{r}
+#| label: setup
+#| message: false
+#| echo: false
+library(tidyverse)
+library(flextable)
+```
+
+## General Comments
+
+-   Dokumentet er reproduserbart. Bra!
+-   Avansert kode for å lese inn de relevante objektene. Antar det er KI som er opphav. Ved en bedre organisering av dataene kan dette gjøres langt lettere.
+-   Den første kode-chunken bør ha label setup og er der man laster bibliotek og setter eventuelle opsjoner. Årsaken er at denne blir sjekket hver gang før noe kode blir kjørt i en chunk. Legger man til et bibliotek i setup vil man straks ha tilgang til alle  funksjonene i dette biblioteket i chunkene nedenfor.
+-   Etter at vi har lastet tidyverse er det ikke nødvendig å laste bibliotekene i tidyverse på ny (slik som dplyr, ggplot etc)
+    -   Jeg har prøvd å rydde litt.
+-   Dere ser ut til å ha beregnet vekst fra første år til 2017 (som en kontinuerlig avkastning). Oppgaven spør etter «change in GDP per capita for each Nuts2 region». Siden gini er beregnet for hver år er det underforstått her at også økonomisk vekst er for hvert år, alstå endring i gdp_pc (på NUTS2 nivå fra år 2016 til 2017). Burde kanskje stått «yearly change in GDP per capita for each Nuts2 region» så kunne vi ungått misforståelser. 
+    -   Årlig endring er lett å beregne vha. `Dgdp_pc_n2 = 100 * ((gdp_pc_n2 - dplyr::lag(gdp_pc_n2)) / dplyr::lag(gdp_pc_n2))` eller `Dgdp_pc_n2 = 100 * log(gdp_pc_n2/ dplyr::lag(gdp_pc_n2))` hvis en vil ha koninuerlig vekst. Så filtrer er bare datasettet på `År == 2017` for å få data til cross-section analysen.
+    -   Vekst opp til 2017 kunne og vært en fornuftig størrelse. Bør bruke et felles startår, ellers sammenligner en epler og pærer.
+    -   En slik vekst blir jo gjennomsnittlig vekst i perioden og kan skjule stor variasjon fra år til år.
+-   Når dere genererer `gini_nuts2_year` objektet i chunk-en `setup-data` bruker dere et vektet gjennomsnitt for å finne `mean_y` som er gdp_pc for NUTS2 regioner. En kanskje enklere fremgangsmåte er å summere `pop` og `gdp` som vil gi populasjonen (`pop_n2`) og gdp (`gdp_n2`) i NUTS2 regionene. `gdp_pc_n2` blir da ganske enkelt `gdp_pc_n2 = gdp_n2 / pop_n2`. `pop_n2` og `gdp_n2` kan også være greie å ha senere i analysen.
+-   Tabellen tbl-coverage ser ut til å mangle
+-   Prøv også med en modell der dere tillater forskjellig konstantledd for de ulike landene (faktor variabel basert på `str_sub(Geo_Kode, 1, 2)`).
+-   Prøve også en modell dere dere tillater både forskjellig konstantledd og stigningstall (koeffisient), dvs. vha interaksjon mellom vekst_gdp_pc_nuts2 og land faktor.
+-   Del B. Variablene dere har valgt virker fornuftige.
+-   Vurder også her om en land-faktor kan være relevant og osgå interaksjon for å tillate at effektene varierer mellom land.
+-   Test for om robuste estimat (av SE) er påkrevd
+-   Tenk også på test av kombinerte hypoteser vha `car::linearhypotesis()` og også robuste F-verdier.
+
+
+## Tips til enklere kode ass2
+
+```{r}
+#| eval: false
+load(file = "gdp_pop.RData")
+```
+
+```{r}
+#| eval: false
+gdp_pop_2017 <- gdp_pop |> 
+  mutate(
+    Dgdp_pc_n2 = 100 * ((gdp_pc_n2 - dplyr::lag(gdp_pc_n2)) / dplyr::lag(gdp_pc_n2))
+  ) |>  
+  filter(År == 2017)
+```
+
+```{r}
+#| eval: false
+lm1 <- lm(
+  formula = gini_n2 ~ Dgdp_pc_n2,
+  data = gdp_pop_2017
+)
+```
+
+```{r}
+#| eval: false
+summary(lm1)
+```
+
+Finner en svak negativ sammenheng mellom vekst (Dgdp_pc_n2) og gini_n2. Dette indikerer at økonomisk vekst fører til reduksjon i gini_n2 dvs. mindre regionale ulikeheter. Ser imidlertid at sammenhengen ikke er signifikant.
+
+```{r}
+#| eval: false
+#| label: tbl-reg-2017
+#| tbl-cap: Det ser ut til å være klare forskjeller mellom landene
+gdp_pop_2017 |> 
+  ggplot(
+    mapping = aes(x = Dgdp_pc_n2, y = gini_n2)
+  ) +
+  geom_point(
+    mapping = aes(shape = nc)
+    ) +
+  geom_smooth(formula = 'y ~ x', se = FALSE, method = "lm")
+```
+
+```{r}
+#| eval: false
+lm2 <- gdp_pop_2017 |> 
+# EE bare en observasjon
+  filter(!nc == "EE") |> 
+  lm(
+    formula = gini_n2 ~ nc + Dgdp_pc_n2,
+    data = _
+)
+```
+
+```{r}
+#| eval: false
+summary(lm2)
+```
+
+Bør vi bruke robuste estimat SE?
+
+```{r}
+#| eval: false
+plot(lm2, which = 1)
+```
+
+
+```{r}
+#| eval: false
+lmtest::bgtest(gini_n2 ~ nc + Dgdp_pc_n2, data = gdp_pop_2017)
+```
+
+Vi bør bruke robuste SE.
+
+```{r}
+#| eval: false
+lmtest::coeftest(lm2, vcov = sandwich::vcovHC)
+```
+
+Er det signifikante forskjeller mellom landene?
+
+```{r}
+#| eval: false
+car::linearHypothesis(
+  model = lm2,
+  hypothesis.matrix = c(
+    "ncCZ = 0",
+    "ncES = 0",
+    "ncSI  = 0"
+  )
+)
+```
+
+Bør vi begrense til modell uten land faktor? No.
+
+Vi kan se det samme vha. robust F-test.
+
+
+
+
+
+
+

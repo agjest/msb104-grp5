@@ -1,60 +1,593 @@
 ---
-title: "Regional Development and Inequality in [dine land]"
-author: ["Frida A. Alendal", "Gruppemedlemmer"]
+title: " Regional utvikling og ulikhet  
+  i Østerrike, Tsjekkia, Estland, Spania og Slovenia"
+author: ["Katinca Valvatne", "Frida Alendal"]
 format:
   pdf:
     papersize: a4
     fontsize: 11pt
+    df-print: kable
+    include-in-header: 
+      text: |
+        \usepackage{float}
 lang: "nb"
 csl: "apa7.csl"
+execute:
+  warning: false
+  message: false
+  echo: false
+
 
 ---
 
+```{r}
+gdpc_2023         <- readRDS("data/gdpc_2023.rds")
+gini_nuts2_year   <- readRDS("data/gini_nuts2_year.rds")
+gdpc_country_mean <- readRDS("data/gdpc_country_mean.rds")
+gdpc_clean        <- readRDS("data/gdpc_clean.rds")
+gini_2023 <- readRDS("data/gini_2023.rds")
+ols_m1_results <- readRDS("data/ols_m1_results.rds")
+fig_ols_scatter <- readRDS("data/fig_ols_scatter.rds")
+tidy_mod_B <- readRDS("data/tidy_mod_B.rds")
+fig_ols_scatter_ass3 <- readRDS("data/fig_ols_scatter.rds")
+model_comp_ass3 <- readRDS("data/model_comp_ass3.rds")
+fig_fun_forms_ass3 <- readRDS("data/fig_fun_forms_ass3.rds")
+fig_edu_scatter <- readRDS("data/fig_edu_scatter.rds")
+tab_reg3 <- readRDS("data/tab_reg3.rds")
+tab_int_ass3 <- readRDS("data/tab_int_ass3.rds")
+panel_comp_ass3 <- readRDS("data/panel_comp_ass3.rds")
+
+```
+
+
+
+
 # Sammendrag
+
+Vi oppsummerer funnene fra de tre første oppgavene i MSB104. Analysen omfatter fem europeiske land, Østerrike (AT), Tsjekkia (CZ), Estland (EE), Spania (ES) og Slovenia (SI), og kombinerer deskriptiv statistikk, mål på regional ulikhet og økonometriske modeller. På NUTS-3-nivå beregnes BNP per innbygger (GDPC) for perioden 2000–2023 basert på Eurostat-data for BNP og befolkning. Disse aggregeres deretter til NUTS-2 for å beregne befolkningsvektet Gini-koeffisient og studere regional ulikhet over tid.
+
+I Assignment 2 estimeres en tverrsnittsmodell der Gini i 2017 forklares av regional utvikling, målt som log-vekst i BNP per innbygger fra tidlig 2000-tall til 2017. Resultatene viser en positiv og statistisk signifikant sammenheng: regioner med sterkere økonomisk utvikling har høyere inntektsulikhet (R² ≈ 0,22). Assignment 3 utvider analysen med alternative funksjonelle former, panelmodeller med faste effekter og undergruppeanalyser basert på utdanningsnivå. En kubisk spesifikasjon gir høyest forklaringskraft (R² ≈ 0,37), mens panelmodellen med NUTS-2- og år-faste effekter indikerer en negativ sammenheng mellom utvikling og ulikhet innen regioner over tid.
+
+Samlet viser resultatene at økonomisk utvikling og regional ulikhet henger sammen, men at retning og styrke avhenger av modellvalg og perspektiv. På tvers av regioner er sammenhengen svakt positiv, mens innen regioner over tid synes økt utviklingsnivå å være forbundet med lavere ulikhet. Funnene har implikasjoner for utforming av regionalpolitikk og illustrerer betydningen av paneldata og modellrobusthet i analyser av regional utvikling.
+
+
 
 # Introduksjon
 
-I løpet av de siste tiårene har regional økonomisk utvikling og geografiske forskjeller i inntekt fått økt oppmerskomhet i europeisk politikk. EU sin samholdspolitikk bygger på en antakelse om at sterke regionale ulikheter kan undergrave både økonomisk effektivitet og sosial stabilitet. Samtidig viser nyere forskning at sammenhengen mellom økonomisk vekst og regional ulikhet ikke er entydig. Noen land opplever konvergens mellom regioner over tid, mens andre ser økende polarisering mellom sterke vekstsentra og mer sårbare områder. Dette reiser spørsmål om hvordan utviklingsbaner og institusjonelle forhold spiller sammen med regionale fordelingsmønstre.
+## Bakgrunnn: Regional utvikling og ulikhet
 
-Vi har undersøkt regional utvilking og ulikhet i fem europeiske land: Østerrike (AT), Tsjekkia (CZ), Estland (EE), Spania (ES) og Slovenia (SI). Vi har tatt utgangspunkt i et sett med harmoniserte Eurostat-data på NUTS-3-nivå for perioden 2000-2023, der vi kombinerer regionalt BNP med befolkning per 1. januar for å beregne BNP per innbygger (GDPC). På grunnlag av dette konstruerer vi befolkningsvektede mål for regional ulikhet på NUTS-2 ved hjelp av Gini-koeffisienten. Vi så dermed både på nivå og spredning i regionalt inntektsnivå, og på hvordan interne forskjeller innen regioner utvikler seg over tid.
+Regional utvikling og geografisk ulikhet er sentrale tema i økonomisk politikk, særlig i Europa der store regionale forskjeller utfordrer mål om sosial og territoriell samhold. Ulik utviklingsdynamikk mellom by og land, mellom kjerne- og periferiregioner og mellom land med ulike institusjoner skaper mønstre av vinnere og tapere, både innad og mellom land.
 
-Analysen bygger videre på tre tidligere delarbeider. Først kartla vi nivå og fordeling av BNP per innbygger på NUTS-3 for de fem landene, med vekt på tidsutvikling i landsgjennomsnitt, spredning mellom regioner og særtrekk ved utvalgte land. Deretter koblet vi dette til et mål på regional ulikhet og estimerte tverrsnittsmodeller der Gini-koeffisienten på NUTS-2 i 2017 forklares ved regional utvikling målt som log-vekst i BNP per innbygger frem til 2017. Modellen ble så utvidet med tre regionale kjennetegn, andel med høyere utdanning, arbeidsledighetsrate og befolkningstetthet, for å undersøke om disse faktorene kan bidra til å forklare variasjon u ulikhet utover rene utviklingsforskjeller
+I EU har slike forskjeller blant annet motivert en omfattende regional- og kohesjonspolitikk, der målet er å redusere økonomiske og sosiale forskjeller mellom regioner. Samtidig viser forskning at økonomisk vekst ikke automatisk fører til utjevning – i noen tilfeller kan vekst også forsterke ulikhet.
 
-I den tredje delev av arbeidet gikk vi dypere inn i modelleringen av sammenhengenn mellom utvikling og ulikhet. Vi testet om effekten av regional utvikling varierer mellom undergrupper definert ved utdanningsnivå, og utforsket alternative funksjonelle former (lineær, kvadratisk, kubisk) for å fange eventuelle ikke-linære sammenhenger. Videre gjennomførte vi tester for heteroskedastisitet og estimerte panelmodeller med faste effekter for land, NUTS-2-regioner. Dette gjør  det mulig å skille bedre mellom tidsvariasjon som er felles på tvers av regioner og mer varige forskjeller mellom dem. 
+## Oppgavenes formål og forskningsspørsmål
 
-Formålet med artikkelen er å gi et samlet bilde av hvordan regionalt inntektsnivå og intern ulikhet henger sammen i våre fem land, og hvordan resultatene avhenger av modellvalg og datanivå. Vi stiller særlig tre spørsmål:
+De tre tidligere oppgavene i emnet belyser ulike sider av forholdet mellom regional utvikling og ulikhet. Den første oppgaven kartla nivå og utvikling i BNP per innbygger (GDPC) på NUTS-3-nivå i fem europeiske land (AT, CZ, EE, ES og SI) for perioden 2000–2023, og beregnet befolkningsvektet Gini-koeffisient for GDPC på NUTS-2-nivå. Den andre oppgaven analyserte sammenhengen mellom regional økonomisk utvikling (log-vekst i GDPC) og ulikhet i 2017 (Gini på NUTS-2-nivå), og utvidet modellen med tilleggskjennetegn som utdanning, arbeidsledighet og befolkningstetthet. Den tredje oppgaven undersøkte hvordan sammenhengen mellom utvikling og ulikhet varierer mellom undergrupper basert på utdanningsnivå. Videre ble det testet alternative funksjonelle former (lineær, kvadratisk og kubisk), og estimert panelmodeller med ulike faste effekter for å utnytte tidsdimensjonen i dataene.
 
-(1) Hvordan har nivå og spredning i BNP per innbygger utviklet seg på tvers av regioner siden 2000? 
+Samlet kan prosjektet formuleres rundt tre overordnede forskningsspørsmål:
 
-(2) Hvordan har regional ulikhet innen NUTS-2-regioner utviklet seg over tid?
+- (1) Hvordan har BNP per innbygger og regional ulikhet utviklet seg i fem europeiske land over perioden 2000–2023?
+- (2) Hvordan henger regional økonomisk utvikling sammen med ulikhet mellom regioner på et gitt tidspunkt (2017)?
+- (3) Hvordan påvirker valg av funksjonell form, undergrupper og panelmetodikk tolkningen av sammenhengen mellom utvikling og ulikhet?
 
-(3) Hvilken sammenheng finner vi mellom regional økonomisk utvikling og ulikhet, og hvordan påvirkes denne sammenhengen av andre regionale kjennetegn og valg av modellspesifikasjon? Resten av artikkelen er strukturert som følger: Del || gir en kort gjennomgang av relevant litteratur, del ||| beskriver data og metode, del |V presenterer de empiriske resultatene, del V diskuterer funnene i lys av teori og politikk, del V| peker på begrensninger og mulige veier for videre forskning, før vi avslutter med en konklusjon i del V||. 
+## Betydning og relevans
 
+Å forstå forholdet mellom regional utvikling og ulikhet er sentralt av flere grunner. For det første har dette et fordelingsperspektiv: økende forskjeller mellom regioner kan utfordre både sosial og politisk stabilitet. For det andre er det et effektivitetsperspektiv, der ulik regional utvikling kan reflektere varierende evne til å utnytte potensialet for verdiskaping, innovasjon og humankapital. For det tredje har det en klar politikkutformingseffekt, ettersom grundige analyser av drivere bak regional ulikhet gir et bedre grunnlag for målrettede tiltak, som investeringer i utdanning, infrastruktur og omstilling i svakere regioner.
+
+I dette prosjektet ønsker vi å gi en helhetlig fremstilling av hva de tre oppgavene samlet kan lære oss om forholdet mellom økonomisk utvikling og ulikhet, og hvordan oppgavene utfyller hverandre i å belyse et komplekst regionaløkonomisk mønster.
 
 
 # Litteraturgjennomgang
 
-Regional økonomisk utvikling og geografiske forskjeller i inntekt har lenge vært sentrale tema i både makroøkonomisk og regionaløkonomisk forskning. Mange studier undersøker om regioner innen et land konvergerer mot et felles inntektsnivå over tid, eller om det snarere oppstår vedvarende eller økende forskjeller mellom sterke vekstsentra og mer perifere områder. En viktig tråd i denne litteraturen er at sammenhengen mellom utviklingsnivå og ulikhet ikke nødvendigvis er lineær, men kan følge et mønster der ulikheten først øker, deretter avtar og i noen tilfeller øker svakt igjen ved svært høye inntektsnivåer. Dette knyttes ofte til strukturelle forhold som urbanisering, teknologisk utvikling, integrasjon i verdensmarkedet og institusjonelle forskjeller mellom land og regioner. 
+## Tidlige bidrag: Kuznets-hypotesen
 
-Som hovedreferanse bygger vi på Lessmann og Seidal (2017), som analyserer regional inntektsulikhet på tvers av en stor gruppe land ved å kombinere nattlys-satellittdata  med nasjonale inntektsmål. De predikerer regional inntekt fra lysintensitet, korrigerer for målefeil som top-coding og nullobservasjoner, og bruker de predikerte inntektene til å beregne standard mål på ulikhet som befolkningsvektet Gini og generaliserte entropimål. En viktig begrunnelse i artikkelen er at befolkningsvekting er nødvendig når regioner har svært ulik størrelse. Uten vekting vil små regioner telle like mye som store, og ulikhetsmålene sier da mindre om fordelingen mellom mennesker enn om fordelingen mellom geografiske enheter (@lessmann_seidel_2017).
+Kuznets (1955) er et klassisk referansepunkt i litteraturen om økonomisk utvikling og ulikhet. Han argumenterer for at ulikhet følger en omvendt U-form over utviklingsløpet: I tidlige faser øker ulikheten når økonomien industrialiseres og arbeidskraft flyttes fra landbruk til industri, før den etter hvert avtar når utdanning, velferdsordninger og politiske institusjoner sprer seg bredere i befolkningen.
+Selv om Kuznets opprinnelig diskuterte personlig inntektsulikhet, har idéen blitt overført til romlig og regional ulikhet, der noen regioner går foran i utviklingen og andre henger etter.
 
-Resultatene til Lessmann og Seidel viser for det første at rundt to tredeler av landene i utvalget deres opplever sigma-konvergens, det vil si fallende spredning i 
+## Regional ulikhet, konvergens og romlig struktur
 
+Nyere empirisk forskning på regional ulikhet i Europa kombinerer teorier om konvergens med romlig økonomi og agglomerasjon. Lessmann og Seidel (2017) analyserer regional ulikhet og konvergens ved å kombinere satelittdata og regionale BNP-mål, og viser hvordan ulikhet både kan øke og avta avhengig av institusjonelle og strukturelle forhold.
+I en europeisk kontekst spiller også urbanisering og storbyregioner en viktig rolle. Høyverdiskapende næringer og høyt utdannet arbeidskraft konsentreres ofte i storbyer, noe som kan gi både høyere BNP per innbygger og større interne forskjeller. Samtidig kan perifere regioner oppleve lavere produktivitetsvekst og utvandring av kompetanse.
+
+## Metodiske perspektiver: tverrsnitt vs. panel
+
+Wooldridge (2020) understreker betydningen av å velge riktig metode ved analyse av økonomiske sammenhenger. Rene tverrsnittsmodeller kan lett forveksle korrelasjon og kausalitet, særlig når det finnes uobserverte regionale særtrekk som påvirker både utvikling og ulikhet. Panelmodeller med faste effekter er et viktig verktøy for å kontrollere for tid-invariante, uobserverte karakteristika og felles tidsutvikling.
+Assignment 3 bruker nettopp slike panelmodeller til å utfordre og supplere funnene fra tverrsnittet, og illustrerer godt hvor mye konklusjoner kan endre seg når man går fra «mellom-region»-sammenligning til «innen-region»-dynamikk.
+
+
+## Forskningsgap og bidrag
+
+De tre oppgavene tar utgangspunkt i eksisterende litteratur om regional utvikling og ulikhet, men søker samtidig å fylle flere konkrete forskningsgap. Et viktig bidrag ligger i kombinasjonen av detaljerte NUTS-3-data med aggregerte mål på ulikhet på NUTS-2-nivå, noe som gir en mer nyansert forståelse av både nivå og geografisk spredning enn det som vanligvis presenteres i studentprosjekter. Videre analyserer prosjektet små og mellomstore europeiske land (Østerrike, Tsjekkia, Estland, Spania og Slovenia), som i mindre grad har stått i sentrum for sammenlignende regionaløkonomiske studier, til tross for at de representerer ulike økonomiske strukturer og utviklingsbaner.
+
+Et annet bidrag er at prosjektet integrerer flere metodiske tilnærminger, deskriptiv analyse, tverrsnittsmodeller, alternative funksjonelle former og panelmetoder. Som viser hvordan disse utfyller hverandre i tolkningen av sammenhengen mellom utvikling og ulikhet. Denne metodiske bredden gir et mer helhetlig bilde av underliggende dynamikker enn det som typisk fremkommer i lignende akademiske kursoppgaver.
 
 
 # Data og metode
 
+## Datakilder
+Analysene i denne rapporten baserer seg på tre ulike datasett fra Eurostat. Det første omfatter regionale BNP-tall (nama_10r_3gdp), som rapporteres årlig i millioner euro på NUTS-3-nivå. Det andre datasettet består av befolkningstall per 1. januar (demo_r_pjangr3), også rapportert på NUTS-3. Det siste datasettet er basert på EU-SILC og inneholder Gini-estimater på NUTS-2-nivå, som i Assignment 1 ble konstruert som mål på regional ulikhet ved hjelp av befolkningsvektet Gini. I tillegg benyttes data om utdanning, arbeidsledighet og befolkningstetthet på NUTS-2-nivå som forklaringsvariabler i den tverrsnittlige modellen i Assignment 2, hentet fra Eurostat.
+
+
+BNP per innbygger beregnes ved å kombinere BNP- og befolkningsdata:
+
+
+$$
+GDPC_{i,t} = \frac{BNP_{i,t} \cdot 10^6}{POP_{i,t}}
+$$
+
+hvor "i" er region (NUTS-3) og "t" år.
+
+## Utvalg og analyseenheter
+Utvalget varierer mellom de tre oppgavene. I Assignment 1 analyseres alle tilgjengelige NUTS-3-regioner i Østerrike (AT), Tsjekkia (CZ), Estland (EE), Spania (ES) og Slovenia (SI) i perioden 2000–2023. Assignment 2 benytter NUTS-2-regioner i samme land i 2017, ettersom dette er året hvor det finnes både Gini-verdier og informasjon om utdanningsnivå, befolkningstetthet og arbeidsledighet. Assignment 3 bygger på de samme NUTS-2-regionene, men utvider datagrunnlaget til et panel som gjør det mulig å estimere modeller for hvordan ulikhet utvikler seg over tid.
+
+
+## Mål på regional ulikhet: befolkningsvektet Gini
+Regional ulikhet måles med befolkningsvektet Gini-koeffisient (gini_w) innen hver NUTS-2-region, basert på ulikheten mellom underliggende NUTS-3-regioner. For hver region beregnes både gjennomsnittlig BNP per innbygger og Gini-koeffisienten vektet etter befolkning. Dette gir et mål som reflekterer hvor stor intern variasjon regionen har i forhold til økonomisk nivå.
+
+## Tverrsnittsmodell (Assignment 2)
+I Assignment 2 estimeres følgende grunnmodell for 2017:
+
+der:
+	Gini_(j,2017): befolkningsvektet Gini på NUTS-2-nivå i 2017
+	dev_log_j: log-vekst i befolkningsvektet GDPC fra tidlig 2000-tall til 2017
+	j: NUTS-2-region
+Videre utvides modellen med flere forklaringsvariabler (utdanning, arbeidsledighet og befolkningstetthet) i en multivariat spesifikasjon.
+
+$$
+Gini_{j,2017} = \alpha + \beta \cdot dev\_log_j + u_j
+$$
+
+## Alternativ funksjonelle former (Assignment 3)
+For å teste ikke-linearitet utvides modellen til:
+
+- Kvadratisk modell:
+
+$$
+Gini_{j} = \alpha + \beta_1 dev\_log_j + \beta_2 dev\_log_j^2 + u_j
+$$
+
+- Kubisk modell:
+
+$$
+Gini_{j} = \alpha + \beta_1 dev\_log_j + \beta_2 dev\_log_j^2 + \beta_3 dev\_log_j^3 + u_j
+$$
+
+Der målet er å undersøke om data støtter en mer kompleks sammenheng mellom utvikling og ulikhet, f.eks. en Kuznets-lignende kurve.
+
+## Undergruppeanalyse og interaksjoner
+I Assignment 3 deles regionene inn i tre like store grupper etter andel høyere utdanning (low/mid/high edu), og det estimeres separate linære modeller i hver gruppe, samt en samlet modell med interaksjonsledd:
+
+$$
+Gini_{j} = \alpha 
++ \beta \, dev\_log_{j} 
++ \gamma_{k} \, edu\_group_{k} 
++ \delta_{k} (dev\_log_{j} \cdot edu\_group_{k})
++ u_{j}
+$$
+
+
+Dette gir innsikt i om utvikling påvirker ulikhet ulikt i regioner med forskjellig kompetansenivå.
+
+## Panelmodeller
+Til slutt estimeres flere panelmodeller der Gini for NUTS-2-regioner over tid forklares av utviklingsnivå og ulike faste effekter (land, år, NUTS-2, NUTS-2+år).
+Eksempelvis:
+
+$$
+Gini_{i,t} = \alpha 
++ \beta \, dev\_log_{i,t} 
++ \mu_{i} 
++ \lambda_{t} 
++ \varepsilon_{i,t}
+$$
+
+
+der "μ_j" er regionspesifikke faste effekter og λ_tårsfaste effekter.
+
+
 # Empiriske funn
 
-# Diskusjon
+## Deskriptive funn (Assignment 1)
 
-# Begrensninger og videre forskning
+
+```{r}
+gdpc_country_mean <- readRDS("data/gdpc_country_mean.rds")
+
+library(ggplot2)
+
+ggplot(gdpc_country_mean,
+aes(x = year, y = mean_gdpc, color = country, group = country)) +
+geom_line(linewidth = 0.9) +
+geom_point(size = 1.8) +
+labs(
+x = "År",
+y = "BNP per innbygger (EUR)",
+title = "Landsgjennomsnitt GDPC (NUTS-3)"
+) +
+theme_minimal()
+
+
+```
+```{r}
+library(ggplot2)
+
+ggplot(gdpc_2023, aes(x = country, y = gdpc_eur)) +
+geom_boxplot() +
+labs(
+x = "Land",
+y = "BNP per innbygger (EUR)",
+title = "Spredning i GDPC på NUTS-3, 2023"
+) +
+theme_minimal()
+
+```
+
+```{r}
+library(ggplot2)
+
+ggplot(gini_nuts2_year,
+       aes(x = year, y = gini_w, group = NUTS2, color = country)) +
+  geom_line(linewidth = 0.9, alpha = 0.8) +
+  geom_point(size = 1.6) +
+  facet_wrap(~ country, ncol = 2, scales = "free_y") +
+  labs(
+    x = "År",
+    y = "Gini (NUTS-2, vektet)",
+    title = "Tidsutvikling i regional ulikhet (Gini) innen NUTS-2 (NUTS-3 som enheter)"
+  ) +
+  theme_minimal()
+
+```
+
+
+```{r}
+library(dplyr)
+library(knitr)
+library(kableExtra)
+library(scales)   # for comma()
+
+gdpc_desc <- gdpc_clean |>
+group_by(country) |>
+summarise(
+mean_gdpc = mean(gdpc_eur, na.rm = TRUE),
+sd_gdpc   = sd(gdpc_eur, na.rm = TRUE),
+.groups   = "drop"
+) |>
+mutate(
+mean_gdpc = comma(round(mean_gdpc, 0)),
+sd_gdpc   = comma(round(sd_gdpc, 0))
+)
+
+gdpc_desc |>
+kbl(
+caption   = "Table X: Deskriptiv statistikk for BNP per innbygger (GDPC) på NUTS-3, 2000–2023.",
+booktabs  = TRUE,
+col.names = c("Land", "Gj.snitt GDPC", "Std.avvik")
+) |>
+kable_styling(
+full_width = FALSE,
+position   = "center"
+)
+
+
+
+```
+
+```{r}
+topp10_gini_2023 <- gini_2023 |>
+  arrange(desc(gini_w)) |>
+  slice_head(n = 10)
+
+bunn10_gini_2023 <- gini_2023 |>
+  arrange(gini_w) |>
+  slice_head(n = 10)
+
+```
+
+```{r}
+library(kableExtra)
+library(dplyr)
+
+topp10_gini_2023 |>
+select(country, NUTS2, gini_w) |>
+mutate(gini_w = round(gini_w, 3)) |>
+kbl(
+caption   = "Table X: Topp 10 mest ulikhetsutsatte NUTS-2-regioner (Gini), 2023.",
+col.names = c("Land", "NUTS-2 region", "Gini"),
+booktabs  = TRUE
+) |>
+  kable_styling(
+    full_width    = FALSE,
+    position      = "center",
+    latex_options = "H"   
+  )
+
+
+
+```
+
+```{r}
+bunn10_gini_2023 |>
+select(country, NUTS2, gini_w) |>
+mutate(gini_w = round(gini_w, 3)) |>
+kbl(
+caption   = "Table X: Topp 10 mest likhetsrike (lavest Gini) NUTS-2-regioner, 2023.",
+col.names = c("Land", "NUTS-2 region", "Gini"),
+booktabs  = TRUE
+) |>
+  kable_styling(
+    full_width    = FALSE,
+    position      = "center",
+    latex_options = "H"   
+  )
+
+```
+
+
+Analysen av NUTS-3-regionene viser tydelige forskjeller i økonomisk utvikling mellom landene. Østerrike (AT) har det klart høyeste nivået på BNP per innbygger (om lag 32 700 euro), samtidig som landet har betydelig intern variasjon mellom rike byregioner og mer perifere områder. Spania (ES) følger etter med rundt 21 000 euro, men preges av store forskjeller i antall og størrelse på regionene.
+
+Tsjekkia (CZ) og Estland (EE) har lavere BNP-nivåer, men utviser relativt sterk vekst over perioden, særlig i sentrale områder som Praha (CZ010) og Põhja-Eesti (EE001). Slovenia (SI) ligger mellom disse i nivå, med moderat spredning.
+
+Når vi måler regional ulikhet med befolkningsvektet Gini, finner vi at Estland (EE) har høyest intern ulikhet (gj.sn. Gini ~ 0,172) og et stabilt høyt nivå. Østerrike (AT) og Slovenia (SI) har middels høy ulikhet, men med tydeligere variasjon over tid. Spania (ES) og Tsjekkia (CZ) har lavest ulikhet, med Gini-verdier rundt 0,03–0,04.
+
+Rangeringen av topp- og bunnregioner i 2023 bekrefter dette mønsteret: EE00 og SI04 er blant de mest polariserte regionene, mens CZ05 og SI03 ligger i motsatt ende med svært lav intern ulikhet.
+
+
+
+
+## Tverrsnitt: Utvikling og ulikhet i 2017 (Assignment 2)
+
+
+```{r}
+
+library(kableExtra)
+library(dplyr)
+
+ols_m1_results$coefficients |>
+  mutate(
+    estimate  = round(estimate, 3),
+    std.error = round(std.error, 3),
+    statistic = round(statistic, 2),
+    p.value   = round(p.value, 3)
+  ) |>
+  kbl(
+    caption   = "Table X: OLS-modell for Gini (2017) på utvikling (log-vekst).",
+    col.names = c("Parameter", "Estimate", "Std.avvik", "t-verdi", "p-verdi"),
+    booktabs  = TRUE,
+    align     = "lrrrr"
+  ) |>
+  kable_styling(
+    full_width    = FALSE,
+    position      = "center",
+    latex_options = "H"
+  )
+
+```
+
+I den enkle OLS-modellen for 2017 med Gini som avhengig variabel og dev_log som forklaringsvariabel finner vi:
+	β ̂≈0,086, signifikant på 5 %-nivå (p ≈ 0,03)
+	R² ≈ 0,22, justert R² ≈ 0,18
+	Antall observasjoner: 21 NUTS-2-regioner
+Tolkningen vår er at rundt 10 % høyere log-vekst i BNP per innbygger er forbundet med om lag 0,009 høyere Gini-koeffisient. Dette tilsvarer en moderat, men ikke ubetydelig økning i ulikhet.
+
+
+
+```{r}
+library(ggrepel)
+
+fig_ols_scatter +
+  ggrepel::geom_text_repel(
+    aes(label = NUTS2),
+    size = 3
+  )
+
+fig_ols_scatter
+```
+
+```{r}
+tidy_mod_B |>
+  dplyr::mutate(
+    estimate = round(estimate, 3),
+    std.error = round(std.error, 3),
+    statistic = round(statistic, 2),
+    p.value   = round(p.value, 3)
+  ) |>
+  knitr::kable(
+    caption   = "Tabell X: Modellresultat 2 – utvidet OLS-modell (Gini forklart av utvikling og tre regionkjennetegn), 2017.",
+    col.names = c("Parameter", "Estimat", "Std. feil", "t-verdi", "p-verdi"),
+    booktabs  = TRUE,
+    align     = c("l", "r", "r", "r", "r")
+  )
+
+```
+
+
+Når modellen utvides med andel høyere utdanning, arbeidsledighet og befolkningstetthet (edu_tertiary, unemp_rate, pop_density), finner vi:
+	R² ≈ 0,34, men justert R² ≈ 0,18
+	Ingen av de individuelle variablene er signifikante
+	Høyere BNP per innbygger og høyere andel høyere utdanning er svakt positivt assosiert med ulikhet, mens arbeidsledighet og befolkningstetthet har svakt negativ sammenheng
+Vi konkluderer med at modellen gir indikasjoner på mulige mønstre, men at små utvalg og usikkerhet gjør at funnene ikke bør tolkes som sterke kausale effekter.
+
+
+
+## Alternative funksjonelle former (Assignment 3)
+
+
+```{r}
+
+library(kableExtra)
+
+knitr::kable(
+  model_comp_ass3,
+  caption   = "Tabell X: Sammenligning av lineær, kvadratisk og kubisk modell",
+  col.names = c("Modell", "R²", "Justert R²", "AIC"),
+  digits    = 3,
+  booktabs  = TRUE,
+  align     = "lrrr",
+  escape    = TRUE
+) |>
+  kable_styling(
+    full_width = FALSE,
+    position   = "center"
+  )
+```
+
+Når vi sammenligner lineær, kvadratisk og kubisk modell, finner vi:
+• Lineær: R² ≈ 0,22; β(dev_log) ≈ 0,086, signifikant.
+• Kvadratisk: R² ≈ 0,24; ingen av dev_log og dev_log² signifikante.
+• Kubisk: R² ≈ 0,37; lavest AIC; samlet test signifikant, men individuelle koeffisienter svakt signifikante.
+
+Dette viser at kubisk modell passer dataene best i denne utvalgsstørrelsen.
+
+
+
+```{r}
+fig_fun_forms_ass3
+
+```
+
+Figuren viser at den kubiske kurven følger datapunktene noe bedre, særlig i ytterkantene. 
+Dette antyder svak ikke-linearitet i sammenhengen mellom utvikling (log BNP p.c.) 
+og regional ulikhet (GINI). Likevel er hovedbildet en svak positiv sammenheng, 
+og data gir ikke tydelig støtte til en «klassisk» Kuznets-kurve.
+
+
+## Undergruppeanalyse etter utdanningsnivå
+
+```{r}
+fig_edu_scatter
+
+```
+Figuren illustrerer at helningen mellom utvikling og ulikhet varierer etter utdanningsnivå. Regionen med lavt utdanningsnivå viser en svak negativ helning uten signifikant effekt, mens gruppen med middels utdanningsnivå har en positiv, men ikke signifikant, sammenheng. For gruppen med høyt utdanningsnivå er helningen klart positiv, og den statistiske usikkerheten er lavere enn i de andre gruppene. Dette antyder at sammenhengen mellom utvikling og ulikhet er sterkest i regioner med høy utdanning.
+
+
+```{r}
+knitr::kable(
+  tab_reg3,
+  caption   = "Tabell X: Separate regresjoner for low, mid og high utdanningsnivå",
+  col.names = c("Parameter", "Estimat", "Std. feil", "t-verdi", "p-verdi", "Utdanningsgruppe"),
+  digits    = 3,
+  align     = "lrrrrl"
+)
+```
+
+Figuren illustrerer at helningen mellom utvikling og ulikhet varierer etter utdanningsnivå. Regionen med lavt utdanningsnivå viser en svak negativ helning uten signifikant effekt, mens gruppen med middels utdanningsnivå har en positiv, men ikke signifikant, sammenheng. For gruppen med høyt utdanningsnivå er helningen klart positiv, og den statistiske usikkerheten er lavere enn i de andre gruppene. Dette antyder at sammenhengen mellom utvikling og ulikhet er sterkest i regioner med høy utdanning.
+
+```{r}
+knitr::kable(
+  tab_int_ass3,
+  caption   = "Tabell X: Interaksjonsmodell mellom utvikling (dev_log) og utdanningsnivå",
+  col.names = c("Parameter", "Estimat", "Std. feil", "t-verdi", "p-verdi"),
+  digits    = 3,
+  align     = "lrrrr"
+)
+
+```
+
+Regresjonsresultatene bekrefter mønsteret fra figuren: lav utdanning gir en negativ, men svært usikker helning; middels utdanning gir en positiv, men fortsatt ikke signifikant effekt; og høy utdanning gir en positiv og signifikant effekt. Resultatene må likevel tolkes med varsomhet fordi hvert delutvalg består av kun sju observasjoner.
+
+
+
+## Panelestimat og faste effekter
+
+```{r}
+knitr::kable(
+  panel_comp_ass3,
+  caption = "Tabell X: Sammenligning av panelmodeller (Land-FE, År-FE, NUTS2-FE, NUTS2+År-FE)",
+  col.names = c("Modell", "β (dev_log)", "Std.feil", "p-verdi", "R²", "Justert R²"),
+  digits = 3,
+  booktabs = TRUE,
+  align = "lrrrrr"
+) %>%
+  kableExtra::kable_styling(full_width = FALSE, position = "center")
+
+```
+Panelanalysen viser et tydelig skifte i sammenhengen mellom utvikling og ulikhet når vi går fra tverrsnittsspesifikasjoner til panelmodeller med faste effekter. I Land-FE-modellen estimeres utviklingseffekten til β_dev ≈ –0,011, en liten og ikke-signifikant sammenheng, med R² ≈ 0,68. Når vi kun kontrollerer for årseffekter (år-FE), endrer bildet seg: her er effekten positiv og klart signifikant (β_dev ≈ 0,090, p < 0,001), men forklaringskraften er lavere (R² ≈ 0,20).
+
+Det mest markerte mønsteret fremkommer imidlertid når vi inkluderer faste regionseffekter. I NUTS2-FE-modellen er utviklingskoeffisienten sterkt negativ og høyt signifikant (β_dev ≈ –1,99, p < 0,001), med svært høy forklaringskraft (R² ≈ 0,97). Kombinasjonen av både NUTS2-FE og år-FE gir et nesten identisk resultat (β_dev ≈ –2,00, p < 0,001), og modellen beholder like høy forklaringskraft (R² ≈ 0,98).
+
+Sammenlikningen mellom modellene viser dermed et viktig poeng: uten faste regionseffekter speiler estimatene tverrsnittsmønsteret, der regioner med høy utvikling fremstår som mer ulikhetsutsatte. Når vi derimot kontrollerer for tid-invariante regionale særtrekk snur mønsteret, og økt utviklingsnivå innen samme region over tid er forbundet med lavere ulikhet. Dette antyder at forskjeller mellom regioner – ikke utviklingen i seg selv – driver deler av den positive sammenhengen man observerer i tverrsnittet.
+
+Den mest troverdige spesifikasjonen er derfor panelmodellen med både NUTS2- og år-FE, som kontrollerer for både permanente regionale karakteristika og felles årlige sjokk. Resultatene understreker betydningen av panelmetoder: rene tverrsnittsmodeller kan gi et misvisende bilde av den underliggende dynamikken, mens panelanalyse gir et mer presist grunnlag for å nærme seg kausale tolkninger.
+
+
+
+# Diskusjon og politiske implikasjoner
+
+## Syntese av hovedfunn
+Samlet peker funnene i tre retninger:
+
+1.Store og vedvarende regionale forskjeller:
+Deskriptiv analyse viser betydelige og vedvarende forskjeller i både nivå og spredning av BNP per innbygger mellom og innen land. Estland utmerker seg med høy intern ulikhet, mens Tsjekkia og Spania har lavere, mer jevn regional fordeling.
+
+2.Svak positiv sammenheng på tvers av regioner:
+I tverrsnittet for 2017 er regioner med høyere utvikling gjennomgående mer ulike, om enn sammenhengen er moderat. Dette samsvarer med idéen om at raske vekstregioner opplever sterkere intern polarisering, for eksempel mellom storbykjerne og omlandsregioner.
+
+3.Negativ sammenheng innen regioner over tid:
+Panelmodellen med NUTS-2- og år-FE antyder at når en region løfter sitt utviklingsnivå over tid, reduseres ulikheten. Det kan tolkes som at etter en viss konvergensfase, bidrar videre vekst til å løfte bredere lag av befolkningen, eller at politiske og institusjonelle mekanismer over tid demper ulikheten.
+
+Undergruppeanalysen antyder at utdanningsnivå spiller en rolle: sammenhengen mellom utvikling og ulikhet er sterkest i høyt utdannede regioner. Dette kan indikere at humankapital og kunnskapsintensive næringer både driver vekst og polarisering, for eksempel gjennom høyere lønnsforskjeller mellom grupper.
+
+## Politikkimplikasjoner
+
+Funnene peker mot flere viktige implikasjoner for regionalpolitikken. For det første viser de store nivåforskjellene i både BDG per innbygger og Gini-koeffisient mellom regioner at det fortsatt er behov for målrettede omfordelingsmekanismer. Slike forskjeller underbygger relevansen av politikk som ligner EUs kohesjonspolitikk, der målet er å støtte svakere regioner og motvirke geografisk polarisering.
+
+Et annet sentralt funn gjelder betydningen av utdanning og kompetanse. Siden sammenhengen mellom utvikling og ulikhet er sterkest i regioner med høyt utdanningsnivå, tyder resultatene på at utdanning ikke bare fungerer som et generelt virkemiddel for å redusere ulikhet, men også kan bidra til økt polarisering dersom gevinstene i hovedsak tilfaller bestemte grupper eller områder. Dette understreker viktigheten av politikk som fremmer livslang læring og bred kompetanseheving for å sikre at vekstgevinster fordeles mer jevnt.
+
+Panelresultatene antyder dessuten at når en og samme region vokser over tid, kan ulikheten faktisk reduseres. Dette kan tolkes som at stabil, bredt forankret vekst, kombinert med sterke institusjoner og velferdsordninger, som på sikt bidrar både til utvikling og utjevning. Politikk som retter seg mot bærekraftige og inkluderende vekststrategier kan derfor være mer treffsikker enn tiltak som utelukkende fokuserer på kortsiktig omfordeling.
+
+Til slutt illustrerer analysene at metodiske valg har stor betydning for hvilke politiske konklusjoner man trekker. Tverrsnitt og panel gir delvis motsatte resultater, noe som viser hvor risikabelt det er å basere politikkutforming på enkle korrelasjoner. Mer avanserte empiriske metoder som modeller med faste effekter, er nødvendige for bedre å forstå underliggende mekanismer og for å utvikle mer treffsikre og kunnskapsbaserte politiske virkemidler.
+
+
+# Begrensninger og forslag til videre forskning
+
+## Begrensninger
+Prosjektet har flere viktige begrensninger som det er nødvendig å ta hensyn til når resultatene skal tolkes. For det første er datagrunnlaget relativt lite: tverrsnittsanalysen omfatter kun 21 NUTS-2-regioner fordelt på fem land. Dette gir begrenset statistisk styrke og gjør resultatene mer sårbare for enkeltobservasjoner enn i større studier.
+Det finnes også måleutfordringer. Gini-anslag for små regioner kan være betydelig mer støyende, særlig der EU-SILC-utvalgene er små. I tillegg benyttes BNP-tall i løpende priser som ikke er justert for kjøpekraft (PPS), noe som innebærer at deler av variasjonen kan reflektere prisnivåforskjeller snarere enn reelle forskjeller i velstand og utvikling.
+
+Selv om panelmodellene med faste effekter gir et mer robust rammeverk enn rene tverrsnittsmodeller, gjenstår fortsatt metodiske utfordringer. Det er for eksempel mulig at endogenitet fortsatt påvirker estimatene, ettersom politiske tiltak både kan påvirke og påvirkes av utvikling og ulikhet samtidig. Dette gjør det utfordrende å trekke sterke kausale slutninger.
+
+Til slutt er den tidsmessige avgrensningen en svakhet. Tverrsnittsanalysen bygger på data fra ett enkelt år (2017), og panelperioden er relativt kort. Dette gjør at konklusjoner om langsiktige trender og strukturelle endringer må tolkes med forsiktighet.
+
+## Videre forskning
+Det finnes flere mulige retninger for videre forskning som kan styrke forståelsen av sammenhengen mellom regional utvikling og ulikhet. Et naturlig neste steg vil være å utvide analysen til flere land og et større utvalg regioner, for å undersøke om mønstrene som observeres her også gjelder på tvers av hele EU/EØS. Dette vil gi økt statistisk styrke og bedre grunnlag for å identifisere strukturelle forskjeller mellom land.
+
+Et annet viktig forbedringspunkt vil være å benytte prisjusterte BNP-mål (PPS) eller alternative realinntektsmål. Dette vil gjøre det mulig å skille tydeligere mellom reelle utviklingsforskjeller og variasjon som skyldes ulikt kostnadsnivå. Mer presise mål på økonomisk utvikling vil også kunne avdekke svakere eller sterkere sammenhenger enn det som fremkommer i dagens analyser.
+
+Videre kan fremtidig forskning dra nytte av mer avanserte panelmetoder, som dynamiske panelmodeller eller instrumentvariabeltilnærminger. Slike modeller kan bidra til å identifisere mer troverdige kausale effekter av utvikling på ulikhet, og til å håndtere utfordringer knyttet til endogenitet og tidsinvariante regionale særtrekk på en mer robust måte.
+
+Til slutt vil det være verdifullt å undersøke hvordan konkrete politiske virkemidler påvirker utvikling og ulikhet, for eksempel effekten av EU-støtteordninger, regionalfond eller andre målrettede tiltak. En slik analyse kan gi mer direkte politiske implikasjoner og bidra til å forstå hvilke typer regionale intervensjoner som faktisk virker etter hensikten.
+
 
 # Konklusjon
+Denne oppgaven har samlet og syntetisert funn fra tre tidligere analyser av regional utvikling og ulikhet i fem europeiske land. Basert på detaljerte Eurostat-data og en kombinasjon av deskriptive analyser, tverrsnittsmodeller, alternative funksjonelle spesifikasjoner og panelmodeller, fremtrer et helhetlig bilde av hvordan økonomisk utvikling, regionale strukturer og sosiodemografiske forhold henger sammen.
+
+Analysene viser for det første at det eksisterer betydelige og vedvarende forskjeller både i BNP per innbygger og i regional ulikhet mellom land og regioner. På tvers av regioner i 2017 identifiseres en svak, men tydelig positiv sammenheng mellom økonomisk utvikling og ulikhet. Panelanalysene gir imidlertid et mer nyansert bilde: når vi følger samme regioner over tid og kontrollerer for faste regionale og tidsmessige effekter, er økt utviklingsnivå snarere forbundet med lavere ulikhet. Dette tyder på at tverrsnittssammenhenger til dels reflekterer strukturelle forskjeller mellom regioner, mens panelmodeller fanger opp hvordan utvikling påvirker ulikhet innen regioner over tid.
+
+Videre finner vi at utdanningsnivå og strukturelle kjennetegn former hvordan utvikling slår ut i ulikhet. Sammenhengen varierer mellom grupper, men små utvalg gjør estimatene usikre og funnene må tolkes med varsomhet.
+
+Faglig sett har arbeidet gitt verdifull erfaring i å bygge sammenhengende analyser på tvers av flere deloppgaver, med gradvis økende metodisk kompleksitet. Samlet illustrerer resultatene betydningen av et solid datagrunnlag, grundige modellvalg og kritisk tolkning av empiriske funn – spesielt når analysene skal brukes til å informere politikkutforming.
 
 # Referanser
 
+European Commission, Eurostat. (2025). Regional gross domestic product (by NUTS 3) [nama_10r_3gdp]. Hentet 28. oktober 2025 fra Eurostat.
+
+European Commission, Eurostat. (2025). Population on 1 January by age group, sex and NUTS 3 region [demo_r_pjanaggr3]. Hentet 28. oktober 2025 fra Eurostat.
+
+Lessmann, C., & Seidel, A. (2017). Regional inequality, convergence, and its determinants – A view from outer space. European Economic Review, 92, 110–132.
+
+ass1msb104grp5 (1)
+Kuznets, S. (1955). Economic growth and income inequality. American Economic Review, 45(1), 1–28.
+
+ass3msb104grp5
+Wooldridge, J. M. (2020). Introductory econometrics: A modern approach (7. utg.). Cengage.
+
+
 # Appendiks: Bruk av KI-verktøy
+
+I arbeidet med Assignment 4 har vi brukt KI-verktøy som støtte til:
+•	å forbedre språk, sammenheng og akademisk stil
+•	å oppsummere og formulere metodiske og empiriske funn som allerede er beregnet i R
+Alle numeriske resultater, figurer og modellestimater som refereres til stammer fra arbeidet i Assignment 1–3, som er gjennomført i R/Quarto basert på Eurostat- og EU-SILC-data.
 
 
 

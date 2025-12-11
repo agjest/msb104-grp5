@@ -97,7 +97,7 @@ gini_nuts2_year <- n3 %>%
 library(dplyr)
 library(tidyr)
 
-# (A) Avgrens til landene deres (hvis du vil)
+# (A) Avgrens til landene deres 
 land <- c("ES","AT","CZ","SI","EE")
 g2 <- gini_nuts2_year %>% filter(country %in% land)
 
@@ -149,7 +149,7 @@ gini_2017 <- gini_nuts2_year %>%
 cs_2017 <- gini_2017 %>%
   dplyr::inner_join(dev_2000_2017, by = c("country","NUTS2"))
 
-# 3) Sjekk hvor mange regioner per land vi faktisk analyserer (din tabell)
+# 3) Sjekk hvor mange regioner per land vi faktisk analyserer
 coverage <- cs_2017 %>%
   dplyr::count(country, name = "n_nuts2")
 coverage
@@ -197,29 +197,49 @@ Sterkere økonomisk opphenting kan øke intern spredning (positivt β), men samm
 
 
 ```{r}
+
 # Vis hva som faktisk er i kryss-snittet vårt ------------------------------
-# (du bør allerede ha laget cs_2017 tidligere i dokumentet)
 dplyr::glimpse(cs_2017)       # rask struktur
 nrow(cs_2017)                 # antall regioner
 
 coverage <- cs_2017 %>%
   dplyr::count(country, name = "n_nuts2")
-coverage                      # dekning per land (skrives ut i pdf)
+coverage                      
 
-# OLS med robuste SE --------------------------------------------------------
+# OLS med robuste SE -------------------------------------------------------
 m1 <- lm(gini_w ~ dev_log, data = cs_2017)
 
-# Pene tabeller i dokumentet:
-if (!requireNamespace("knitr", quietly = TRUE)) install.packages("knitr")
-if (!requireNamespace("broom", quietly = TRUE)) install.packages("broom")
+# Sørg for at pakkene finnes (som i veiledningen)
+if (!requireNamespace("knitr",    quietly = TRUE)) install.packages("knitr")
+if (!requireNamespace("broom",    quietly = TRUE)) install.packages("broom")
 if (!requireNamespace("sandwich", quietly = TRUE)) install.packages("sandwich")
-if (!requireNamespace("lmtest", quietly = TRUE)) install.packages("lmtest")
+if (!requireNamespace("lmtest",   quietly = TRUE)) install.packages("lmtest")
 
-knitr::kable(broom::tidy(m1), caption = "OLS: GINI (2017) på utvikling (log-vekst)")
-knitr::kable(broom::glance(m1), caption = "Modellmål (R², adj. R², n)")
+# 1) Lag dataobjekter vi kan gjenbruke senere ------------------------------
+tidy_m1   <- broom::tidy(m1)
+glance_m1 <- broom::glance(m1)
 
-# Robuste standardfeil (HC1)
+# 2) Pene tabeller i dokumentet (som før) ----------------------------------
+knitr::kable(
+  tidy_m1,
+  caption = "OLS: GINI (2017) på utvikling (log-vekst)"
+)
+
+knitr::kable(
+  glance_m1,
+  caption = "Modellmål (R², adj. R², n)"
+)
+
+# 3) Robuste standardfeil (HC1) -------------------------------------------
 lmtest::coeftest(m1, vcov = sandwich::vcovHC(m1, type = "HC1"))
+
+# 4) Lagre resultatene til bruk i Assignment 4 -----------------------------
+ols_m1_results <- list(
+  coefficients = tidy_m1,
+  model_fit    = glance_m1
+)
+
+saveRDS(ols_m1_results, "data/ols_m1_results.rds")
 
 ```
 
@@ -233,17 +253,28 @@ t = r sprintf("%.2f", t_hc1), p= r format.pval(p_hc1, digits = 3) (n = r nobs_m1
 
 
 ```{r}
-# Figur ---------------------------------------------------------------------
-ggplot2::ggplot(cs_2017, ggplot2::aes(x = dev_log, y = gini_w, label = NUTS2)) +
+
+# Figur ---------------------------------------------------------------
+fig_ols_scatter <- ggplot2::ggplot(
+  cs_2017,
+  ggplot2::aes(x = dev_log, y = gini_w, label = NUTS2)
+) +
   ggplot2::geom_point() +
   ggplot2::geom_smooth(method = "lm", se = TRUE) +
   ggplot2::labs(
     x = "Regional utvikling (log-vekst i BNP p.c. til 2017)",
     y = "Regional ulikhet (GINI, NUTS-2, 2017)",
-    title = "Ulikhet vs. utvikling (NUTS-2, våre land)",
+    title   = "Ulikhet vs. utvikling (NUTS-2, våre land)",
     caption = "Utvikling: log(y2017) – log(y_baseline≥2000). GINI fra NUTS-3 i 2017."
   ) +
   ggplot2::theme_minimal()
+
+# Vis figuren i ass2
+fig_ols_scatter
+
+# Lagre figuren til bruk i ass4
+saveRDS(fig_ols_scatter, "data/fig_ols_scatter.rds")
+
 
 ```
 
@@ -353,14 +384,30 @@ saveRDS(data_B3, file = "data/data_B3.rds")
 
 
 ```{r}
-mod_B <- lm(
-  # Linær regresjon for del B:
-  # Gini forklart av utvikling + tre regionkjennetegn 
-  gini_w ~ dev_log + edu_tertiary + unemp_rate + pop_density,
-  data = data_B3
-)
+library(broom)
+library(kableExtra)
 
-summary(mod_B)
+# Gjør om mod_B til "pen" tabell
+tidy_mod_B <- broom::tidy(mod_B) |>
+  dplyr::mutate(
+    estimate = round(estimate, 3),
+    std.error = round(std.error, 3),
+    statistic = round(statistic, 2),
+    p.value  = round(p.value, 3)
+  )
+
+kbl(
+  tidy_mod_B,
+  caption = "Tabell X: Modellresultat 2 – utvidet OLS-modell (Gini forklart av utvikling og tre regionkjennetegn), 2017.",
+  col.names = c("Parameter", "Estimat", "Std. feil", "t-verdi", "p-verdi"),
+  booktabs = TRUE
+) |>
+  kable_styling(
+    full_width = FALSE,
+    position   = "center"
+  )
+# Lagre tabellen så vi kan bruke den i ass4
+saveRDS(tidy_mod_B, "data/tidy_mod_B.rds")
 
 ```
 

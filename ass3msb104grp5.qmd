@@ -83,6 +83,44 @@ summary(mod_mid)
 summary(mod_high)
 
 ```
+```{r}
+library(broom)
+library(kableExtra)
+library(dplyr)
+
+# Lag tidy versjoner av de tre modellene
+tab_low <- tidy(mod_low)  |> mutate(group = "Low edu")
+tab_mid <- tidy(mod_mid)  |> mutate(group = "Mid edu")
+tab_high <- tidy(mod_high)|> mutate(group = "High edu")
+
+# Slå dem sammen til én tabell
+tab_reg3 <- bind_rows(tab_low, tab_mid, tab_high)
+
+# Pene avrundinger
+tab_reg3 <- tab_reg3 |>
+  mutate(
+    estimate = round(estimate, 3),
+    std.error = round(std.error, 3),
+    statistic = round(statistic, 2),
+    p.value = round(p.value, 3)
+  )
+
+# Vis tabellen
+kable(
+  tab_reg3,
+  caption = "Tabell X: Separate regresjoner av utvikling (dev_log) på Gini i tre utdanningsgrupper",
+  col.names = c("Parameter", "Estimat", "Std.feil", "t-verdi", "p-verdi", "Gruppe"),
+  booktabs = TRUE
+) %>%
+  kable_styling(full_width = FALSE, position = "center")
+
+# Lagre til bruk i ass4
+saveRDS(tab_reg3, "data/tab_reg3.rds")
+
+```
+
+
+
 
 ```{r}
 # Modell uten interaksjon: samme dev_log-effekt i alle grupper
@@ -94,7 +132,49 @@ mod_int <- lm(gini_w ~ dev_log * edu_group3, data = data_A)
 summary(mod_int)
 
 ```
+```{r}
 
+library(broom)
+library(dplyr)
+
+# Gjør om interaksjonsmodellen til "pen" tabell
+tab_int_ass3 <- broom::tidy(mod_int) |>
+  dplyr::mutate(
+    estimate  = round(estimate, 3),
+    std.error = round(std.error, 3),
+    statistic = round(statistic, 2),
+    p.value   = round(p.value, 3)
+  )
+
+# Lagre tabellen som RDS-fil til bruk i ass4
+saveRDS(tab_int_ass3, "data/tab_int_ass3.rds")
+
+```
+
+
+
+
+```{r}
+# Lag scatterplot med labels
+library(ggplot2)
+library(ggrepel)
+
+fig_ols_scatter_ass3 <- ggplot(cs_2017, aes(dev_log, gini_w, label = NUTS2)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = TRUE) +
+  ggrepel::geom_text_repel(size = 3) +
+  labs(
+    x = "Regional utvikling (log-vekst i BNP p.c. til 2017)",
+    y = "Regional ulikhet (GINI, NUTS-2, 2017)",
+    title = "Ulikhet vs. utvikling (NUTS-2, våre land)",
+    caption = "Utvikling: log(y2017) – log(y_baseline≥2000). GINI fra NUTS-3 i 2017."
+  ) +
+  theme_minimal()
+
+# Lagre figuren som R-objekt
+saveRDS(fig_ols_scatter_ass3, "data/fig_ols_scatter.rds")
+
+```
 
 
 ```{r}
@@ -105,7 +185,7 @@ anova(mod_no_int, mod_int)
 ```
 
 ```{r}
-ggplot(data_A, aes(x = dev_log, y = gini_w, colour = edu_group3)) +
+fig_edu_scatter <- ggplot(data_A, aes(x = dev_log, y = gini_w, colour = edu_group3)) +
   geom_point() +
   geom_smooth(method = "lm", se = FALSE) +
   labs(
@@ -114,6 +194,8 @@ ggplot(data_A, aes(x = dev_log, y = gini_w, colour = edu_group3)) +
     colour = "Utdanningsnivå"
   ) +
   theme_bw()
+saveRDS(fig_edu_scatter, "data/fig_edu_scatter.rds")
+
 
 ```
 
@@ -190,6 +272,8 @@ model_comp <- tibble::tibble(
 
 model_comp
 
+saveRDS(model_comp, "data/model_comp_ass3.rds")
+
 ```
 
 ## Estimering og visualisering 
@@ -225,21 +309,33 @@ pred_grid$gini_cubic <- predict(mod_cubic, newdata = pred_grid)
 
 
 ```{r}
-# Plotter datapunkter + tre kurver for de ulike funksjonelle formene
-ggplot(data_B, aes(x = dev_log, y = gini_w)) +
+fig_fun_forms_ass3 <- ggplot(data_B, aes(x = dev_log, y = gini_w)) +
   geom_point() +
-  geom_line(data = pred_grid,
-            aes(y = gini_lin, colour = "Lineær")) +
-  geom_line(data = pred_grid,
-            aes(y = gini_quad, colour = "Kvadratisk")) +
-  geom_line(data = pred_grid,
-            aes(y = gini_cubic, colour = "Kubisk")) +
+  geom_line(
+    data = pred_grid,
+    aes(y = gini_lin, colour = "Lineær")
+  ) +
+  geom_line(
+    data = pred_grid,
+    aes(y = gini_quad, colour = "Kvadratisk")
+  ) +
+  geom_line(
+    data = pred_grid,
+    aes(y = gini_cubic, colour = "Kubisk")
+  ) +
   labs(
-    x      = "Regional utvikling (log BNP per innbygger)",
-    y      = "Gini-koeffisient",
-    colour = "Funksjonell form"
+    x       = "Regional utvikling (log BNP per innbygger)",
+    y       = "Gini-koeffisient",
+    colour  = "Funksjonell form"
   ) +
   theme_bw()
+
+# Vis figuren i ass3 (så du ser at alt fortsatt ser riktig ut)
+fig_fun_forms_ass3
+
+# Lagre som .rds-fil i data-mappen
+saveRDS(fig_fun_forms_ass3, "data/fig_fun_forms_ass3.rds")
+
 
 ```
 
@@ -288,7 +384,7 @@ het_tests <- tibble::tibble(
   p_value = c(bp_lin$p.value,    bp_quad$p.value,    bp_cubic$p.value)
 )
 
-het_tests  # Tabell Katinca kan bruke i teksten
+het_tests  
 
 ```
 
@@ -437,6 +533,8 @@ panel_comp <- tibble::tibble(
 )
 
 panel_comp
+saveRDS(panel_comp, "data/panel_comp_ass3.rds")
+
 
 ```
 Resultatene fra panelmodellen viser store forskjeller i koeffisienten for dev_log avhengig av hvilke faste effekter som inkluderes. Når vi kun kontrollerer for felles utvikling over tid (år-faste effekter), er sammenhengen positiv og signifikant. Dette speiler en forenklet observasjon: regioner med høy utvikling har ofte høyere ulikhet.

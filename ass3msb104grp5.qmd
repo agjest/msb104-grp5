@@ -18,13 +18,17 @@ execute:
   message: false  # skjul meldinger i output
 ---
 
-
-
-
 ```{r}
+#| label: setup
 # Laster nødvendige pakker for del A
-library(dplyr)
-library(ggplot2)
+library(tidyverse)
+library(broom)
+library(kableExtra)
+library(ggrepel)
+library(lmtest)
+library(sandwich)
+library(plm)
+library(flextable)
 ```
 
 ```{r}
@@ -44,7 +48,7 @@ list.files("data")
 # Laster inn datasett som ble lagret i Assignment 1/2
 gini_nuts2_year <- readRDS("data/gini_nuts2_year.rds")
 dev_2000_2017   <- readRDS("data/dev_2000_2017.rds")
-
+cs_2017 <- readRDS("data/cs_2017.rds")
 ```
 
 
@@ -84,10 +88,6 @@ summary(mod_high)
 
 ```
 ```{r}
-library(broom)
-library(kableExtra)
-library(dplyr)
-
 # Lag tidy versjoner av de tre modellene
 tab_low <- tidy(mod_low)  |> mutate(group = "Low edu")
 tab_mid <- tidy(mod_mid)  |> mutate(group = "Mid edu")
@@ -104,22 +104,27 @@ tab_reg3 <- tab_reg3 |>
     statistic = round(statistic, 2),
     p.value = round(p.value, 3)
   )
-
-# Vis tabellen
-kable(
-  tab_reg3,
-  caption = "Tabell X: Separate regresjoner av utvikling (dev_log) på Gini i tre utdanningsgrupper",
-  col.names = c("Parameter", "Estimat", "Std.feil", "t-verdi", "p-verdi", "Gruppe"),
-  booktabs = TRUE
-) %>%
-  kable_styling(full_width = FALSE, position = "center")
-
-# Lagre til bruk i ass4
-saveRDS(tab_reg3, "data/tab_reg3.rds")
-
 ```
 
+```{r}
+#| label: tbl-sep-reg
+#| tbl-cap: "Tabell X: Separate regresjoner av utvikling (dev_log) på Gini i tre utdanningsgrupper"
+# Vis tabellen
+# kable(
+#   tab_reg3,
+#   col.names = c("Parameter", "Estimat", "Std.feil", "t-verdi", "p-verdi", "Gruppe"),
+#   booktabs = TRUE
+# ) %>%
+#   kable_styling(full_width = FALSE, position = "center")
+tab_reg3 |> 
+  flextable() |> 
+  autofit()
+```
 
+```{r}
+# Lagre til bruk i ass4
+saveRDS(tab_reg3, "data/tab_reg3.rds")
+```
 
 
 ```{r}
@@ -133,10 +138,6 @@ summary(mod_int)
 
 ```
 ```{r}
-
-library(broom)
-library(dplyr)
-
 # Gjør om interaksjonsmodellen til "pen" tabell
 tab_int_ass3 <- broom::tidy(mod_int) |>
   dplyr::mutate(
@@ -156,9 +157,6 @@ saveRDS(tab_int_ass3, "data/tab_int_ass3.rds")
 
 ```{r}
 # Lag scatterplot med labels
-library(ggplot2)
-library(ggrepel)
-
 fig_ols_scatter_ass3 <- ggplot(cs_2017, aes(dev_log, gini_w, label = NUTS2)) +
   geom_point() +
   geom_smooth(method = "lm", se = TRUE) +
@@ -362,9 +360,6 @@ Heteroskedastisitet betyr at variansen i feilleddet (residualene) ikke er konsta
 
 ```{r}
 # Laster inn pakker for heteroskedastisitetstest
-library(lmtest)
-library(sandwich)
-
 # Breusch–Pagan-test for lineær, kvadratisk og kubisk modell
 bp_lin   <- bptest(mod_lin)
 bp_quad  <- bptest(mod_quad)
@@ -418,7 +413,7 @@ Vi bruker paneldata med alle regioner og år for å undersøke effekten av utvik
 
 ```{r}
 #Laster inn pakke for paneldata
-library(plm)
+# flyttet til setup chunk
 ```
 
 ```{r}
@@ -455,6 +450,18 @@ panel_p_country <- plm::pdata.frame(
 dplyr::glimpse(panel_p_nuts2)
 
 ```
+
+```{r}
+# ag: skal bare ha 1 tall
+table(index(panel_p_nuts2), useNA = "ifany")
+```
+
+
+```{r}
+# ag: skal bare ha 1 tall
+table(index(panel_p_country), useNA = "ifany")
+```
+
 
 
 ```{r}

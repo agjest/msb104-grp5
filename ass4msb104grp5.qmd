@@ -21,6 +21,16 @@ execute:
 ---
 
 ```{r}
+#| labe: setup
+#| message: false
+library(tidyverse)
+library(knitr)
+library(kableExtra)
+library(scales)   # for comma()
+```
+
+
+```{r}
 gdpc_2023         <- readRDS("data/gdpc_2023.rds")
 gini_nuts2_year   <- readRDS("data/gini_nuts2_year.rds")
 gdpc_country_mean <- readRDS("data/gdpc_country_mean.rds")
@@ -38,8 +48,6 @@ tab_int_ass3 <- readRDS("data/tab_int_ass3.rds")
 panel_comp_ass3 <- readRDS("data/panel_comp_ass3.rds")
 
 ```
-
-
 
 
 # Sammendrag
@@ -190,9 +198,10 @@ der "μ_j" er regionspesifikke faste effekter og λ_tårsfaste effekter.
 
 
 ```{r}
+#| warning: false
 gdpc_country_mean <- readRDS("data/gdpc_country_mean.rds")
 
-library(ggplot2)
+#library(ggplot2)
 
 ggplot(gdpc_country_mean,
 aes(x = year, y = mean_gdpc, color = country, group = country)) +
@@ -208,7 +217,8 @@ theme_minimal()
 
 ```
 ```{r}
-library(ggplot2)
+#| warning: false
+#library(ggplot2)
 
 ggplot(gdpc_2023, aes(x = country, y = gdpc_eur)) +
 geom_boxplot() +
@@ -222,7 +232,7 @@ theme_minimal()
 ```
 
 ```{r}
-library(ggplot2)
+#library(ggplot2)
 
 ggplot(gini_nuts2_year,
        aes(x = year, y = gini_w, group = NUTS2, color = country)) +
@@ -240,11 +250,6 @@ ggplot(gini_nuts2_year,
 
 
 ```{r}
-library(dplyr)
-library(knitr)
-library(kableExtra)
-library(scales)   # for comma()
-
 gdpc_desc <- gdpc_clean |>
 group_by(country) |>
 summarise(
@@ -267,9 +272,6 @@ kable_styling(
 full_width = FALSE,
 position   = "center"
 )
-
-
-
 ```
 
 ```{r}
@@ -284,8 +286,8 @@ bunn10_gini_2023 <- gini_2023 |>
 ```
 
 ```{r}
-library(kableExtra)
-library(dplyr)
+# library(kableExtra)
+# library(dplyr)
 
 topp10_gini_2023 |>
 select(country, NUTS2, gini_w) |>
@@ -339,8 +341,8 @@ Rangeringen av topp- og bunnregioner i 2023 bekrefter dette mønsteret: EE00 og 
 
 ```{r}
 
-library(kableExtra)
-library(dplyr)
+# library(kableExtra)
+# library(dplyr)
 
 ols_m1_results$coefficients |>
   mutate(

@@ -189,6 +189,7 @@ mangler_i_cs <- dplyr::anti_join(har_2017, i_cs, by = c("country","NUTS2"))
 mangler_2017   # til appendiks/notat
 mangler_i_cs   # til appendiks/notat
 
+saveRDS(cs_2017, file = "./data/cs_2017.rds")
 ```
 
 ## Modell
@@ -243,6 +244,7 @@ ols_m1_results <- list(
 )
 
 saveRDS(ols_m1_results, "data/ols_m1_results.rds")
+saveRDS(m1, "data/m1.rds")
 
 ```
 

@@ -2,31 +2,33 @@
 title: " Regional utvikling og ulikhet  
   i Østerrike, Tsjekkia, Estland, Spania og Slovenia"
 author: ["Katinca Valvatne", "Frida Alendal"]
+papersize: a4
+fontsize: 11pt
+citeproc: true
+tbl-cap-location: bottom
 format:
   pdf:
-    papersize: a4
-    fontsize: 11pt
     df-print: kable
     include-in-header: 
       text: |
         \usepackage{float}
-lang: "nb"
+  typst: default
+lang: nb
 csl: "apa7.csl"
 execute:
   warning: false
   message: false
   echo: false
-
-
 ---
 
 ```{r}
-#| labe: setup
+#| label: setup
 #| message: false
 library(tidyverse)
 library(knitr)
 library(kableExtra)
 library(scales)   # for comma()
+library(flextable)
 ```
 
 
@@ -46,7 +48,7 @@ fig_edu_scatter <- readRDS("data/fig_edu_scatter.rds")
 tab_reg3 <- readRDS("data/tab_reg3.rds")
 tab_int_ass3 <- readRDS("data/tab_int_ass3.rds")
 panel_comp_ass3 <- readRDS("data/panel_comp_ass3.rds")
-
+m1 <- readRDS("data/m1.rds")
 ```
 
 
@@ -198,6 +200,8 @@ der "μ_j" er regionspesifikke faste effekter og λ_tårsfaste effekter.
 
 
 ```{r}
+#| label: fig-landsgjennomsnitt
+#| fig-cap: Landsgjennomsnitt GDPC (NUTS-3)
 #| warning: false
 gdpc_country_mean <- readRDS("data/gdpc_country_mean.rds")
 
@@ -209,14 +213,16 @@ geom_line(linewidth = 0.9) +
 geom_point(size = 1.8) +
 labs(
 x = "År",
-y = "BNP per innbygger (EUR)",
-title = "Landsgjennomsnitt GDPC (NUTS-3)"
+y = "BNP per innbygger (EUR)"
 ) +
 theme_minimal()
-
-
 ```
+
+@fig-landsgjennomsnitt viser utviklingen i BNP per innbygger (EUR) for landene som er med i undersøkelsen.
+
 ```{r}
+#| label: fig-spredning-gdpc-2023
+#| fig-cap: Spredning i GDPC på NUTS-3 nivå i 2023.
 #| warning: false
 #library(ggplot2)
 
@@ -231,7 +237,12 @@ theme_minimal()
 
 ```
 
+@fig-spredning-gdpc-2023 viser spredning for BNP per innbygger på landsnivå i 2023. Dessverre var tallene for Spania ikke klar ennå fra Eurostat.
+
 ```{r}
+#| label: fig-gini-nuts2
+#| fig-cap: "Tidsutvikling i regional ulikhet (Gini) innen NUTS-2 (NUTS-3 som enheter)"
+#| warning: false
 #library(ggplot2)
 
 ggplot(gini_nuts2_year,
@@ -241,15 +252,18 @@ ggplot(gini_nuts2_year,
   facet_wrap(~ country, ncol = 2, scales = "free_y") +
   labs(
     x = "År",
-    y = "Gini (NUTS-2, vektet)",
-    title = "Tidsutvikling i regional ulikhet (Gini) innen NUTS-2 (NUTS-3 som enheter)"
+    y = "Gini (NUTS-2, vektet)"
   ) +
   theme_minimal()
 
 ```
 
+@fig-gini-nuts2 viser tidsutvikling i regional ulikhet (Gini) innen NUTS-2 soner (NUTS-3 som enheter). Det er altså variasjonen mellom NUTS3 regionene innen NUTS2 regioner som vises.
 
 ```{r}
+#| label: tbl-desc-stat
+#| tbl-cap: "Deskriptiv statistikk for BNP per innbygger (GDPC) på NUTS-3, 2000–2023."
+#| ft.arraystretch: 1.2
 gdpc_desc <- gdpc_clean |>
 group_by(country) |>
 summarise(
@@ -262,30 +276,40 @@ mean_gdpc = comma(round(mean_gdpc, 0)),
 sd_gdpc   = comma(round(sd_gdpc, 0))
 )
 
+# gdpc_desc |>
+# kbl(
+# booktabs  = TRUE,
+# col.names = c("Land", "Gj.snitt GDPC", "Std.avvik")
+# ) |>
+# kable_styling(
+# full_width = FALSE,
+# position   = "center"
+# )
+
 gdpc_desc |>
-kbl(
-caption   = "Table X: Deskriptiv statistikk for BNP per innbygger (GDPC) på NUTS-3, 2000–2023.",
-booktabs  = TRUE,
-col.names = c("Land", "Gj.snitt GDPC", "Std.avvik")
-) |>
-kable_styling(
-full_width = FALSE,
-position   = "center"
-)
+  as_flextable(
+    show_coltype = FALSE
+  ) |> 
+  fontsize(size = 10, part = "all") |> 
+  line_spacing(space = 0.3) |> 
+  delete_part("footer")
 ```
+
+@tbl-desc-stat viser deskriptiv statistikk for BNP per innbygger (GDPC).
+
 
 ```{r}
 topp10_gini_2023 <- gini_2023 |>
   arrange(desc(gini_w)) |>
-  slice_head(n = 10)
+ head(n = 10)
 
 bunn10_gini_2023 <- gini_2023 |>
   arrange(gini_w) |>
-  slice_head(n = 10)
-
+  head(n = 10)
 ```
 
 ```{r}
+#| eval: false
 # library(kableExtra)
 # library(dplyr)
 
@@ -302,12 +326,48 @@ booktabs  = TRUE
     position      = "center",
     latex_options = "H"   
   )
-
-
-
 ```
 
 ```{r}
+#| label: tbl-ulikhetsutsatte
+#| tbl-cap: Topp 10 mest ulikhetsutsatte NUTS-2-regioner (Gini), 2023.
+#| ft.arraystretch: 1.2
+#ag: mitt forslag
+topp10_gini_2023 |>
+# ag: kan endre variabelnavn «on-the-fly» i pipen vha. select
+select("Land" = country, "NUTS-2 region" = NUTS2, "Gini" = gini_w) |>
+as_flextable(
+  show_coltype = FALSE
+) |> 
+  colformat_double(j = 3, digits = 3) |> 
+  fontsize(size = 10, part = "all") |> 
+  line_spacing(space = 0.5) |> 
+  delete_part("footer")
+```
+
+```{r}
+#| label: tbl-minst-ulikhetsutsatte
+#| tbl-cap: Bunn 10 mest ulikhetsutsatte NUTS-2-regioner (Gini), 2023.
+#| ft.arraystretch: 1.2
+#ag: mitt forslag
+bunn10_gini_2023 |>
+# ag: kan endre variabelnavn «on-the-fly» i pipen vha. select
+select("Land" = country, "NUTS-2 region" = NUTS2, "Gini" = gini_w) |>
+as_flextable(
+  show_coltype = FALSE
+) |> 
+  colformat_double(j = 3, digits = 3) |> 
+  fontsize(size = 10, part = "all") |> 
+  line_spacing(space = 0.5) |> 
+  delete_part("footer")
+```
+
+
+
+I @tbl-ulikhetsutsatte og @tbl-minst-ulikhetsutsatte har noe åpenbart gått galt siden `gini_2023` bare inneholder 4 observasjoner.
+
+```{r}
+#| eval: false
 bunn10_gini_2023 |>
 select(country, NUTS2, gini_w) |>
 mutate(gini_w = round(gini_w, 3)) |>
@@ -321,7 +381,6 @@ booktabs  = TRUE
     position      = "center",
     latex_options = "H"   
   )
-
 ```
 
 
@@ -338,8 +397,11 @@ Rangeringen av topp- og bunnregioner i 2023 bekrefter dette mønsteret: EE00 og 
 
 ## Tverrsnitt: Utvikling og ulikhet i 2017 (Assignment 2)
 
-
 ```{r}
+#| eval: false
+
+# ag: her sparer dere masse arbeid og får et bedre resultat ved
+# heller å bruke selve regresjonsobjektet og as_flextable. 
 
 # library(kableExtra)
 # library(dplyr)
@@ -365,7 +427,24 @@ ols_m1_results$coefficients |>
 
 ```
 
-I den enkle OLS-modellen for 2017 med Gini som avhengig variabel og dev_log som forklaringsvariabel finner vi:
+```{r}
+#| label: tbl-m1
+#| tbl-cap: OLS-modell for Gini (2017) på utvikling (log-vekst).
+#| ft.arraystretch: 1.2
+# ag: Jeg har vært inne i ass2 og lagret selve regresjonsobjektet som m1.rds
+# dette er lest inn som m1 helt i starten av dette dokumentet (ass4)
+m1 |> 
+  as_flextable() |> 
+  # neste linje virker ikke i pdf (latex) derfor
+  # vi bruker ft.arraystretch
+  line_spacing(space = 0.5, part = "all") |> 
+  fontsize(size = 10, part = "all") |> 
+  colformat_double(digits = 4)
+```
+
+
+
+I den enkle OLS-modellen for 2017 med Gini som avhengig variabel og dev_log som forklaringsvariabel gjengitt i @tbl-m1 finner vi:
 	β ̂≈0,086, signifikant på 5 %-nivå (p ≈ 0,03)
 	R² ≈ 0,22, justert R² ≈ 0,18
 	Antall observasjoner: 21 NUTS-2-regioner
@@ -374,6 +453,7 @@ Tolkningen vår er at rundt 10 % høyere log-vekst i BNP per innbygger er forbun
 
 
 ```{r}
+#| message: false
 library(ggrepel)
 
 fig_ols_scatter +
@@ -381,11 +461,10 @@ fig_ols_scatter +
     aes(label = NUTS2),
     size = 3
   )
-
-fig_ols_scatter
 ```
 
 ```{r}
+#| eval: false
 tidy_mod_B |>
   dplyr::mutate(
     estimate = round(estimate, 3),
@@ -402,20 +481,39 @@ tidy_mod_B |>
 
 ```
 
+```{r}
+#| label: tbl-Modellresultat-2
+#| tbl-cap: Modellresultat 2 – utvidet OLS-modell (Gini forklart av utvikling og tre regionkjennetegn), 2017.
+#| ft.arraystretch: 1.2
+# også her hadde det vært mye enklere å tatt vare på modelleresulatet mod_B
+# og så sendt dette rett til as_flextable
+tidy_mod_B |>
+  dplyr::mutate(
+    estimate = round(estimate, 3),
+    std.error = round(std.error, 3),
+    statistic = round(statistic, 2),
+    p.value   = round(p.value, 3)
+  ) |>
+  flextable() |> 
+  fontsize(size = 10, part = "all") |> 
+  autofit()
+```
 
-Når modellen utvides med andel høyere utdanning, arbeidsledighet og befolkningstetthet (edu_tertiary, unemp_rate, pop_density), finner vi:
-	R² ≈ 0,34, men justert R² ≈ 0,18
+
+
+
+Når modellen utvides med andel høyere utdanning, arbeidsledighet og befolkningstetthet (edu_tertiary, unemp_rate, pop_density) gjengitt i @tbl-Modellresultat-2, finner vi:
+	$R^2 \approx 0,34$, men justert $R^2 \approx 0,18$.
 	Ingen av de individuelle variablene er signifikante
 	Høyere BNP per innbygger og høyere andel høyere utdanning er svakt positivt assosiert med ulikhet, mens arbeidsledighet og befolkningstetthet har svakt negativ sammenheng
 Vi konkluderer med at modellen gir indikasjoner på mulige mønstre, men at små utvalg og usikkerhet gjør at funnene ikke bør tolkes som sterke kausale effekter.
 
-
+\pagebreak[4]
 
 ## Alternative funksjonelle former (Assignment 3)
 
-
 ```{r}
-
+#| eval: false
 library(kableExtra)
 
 knitr::kable(
@@ -433,7 +531,17 @@ knitr::kable(
   )
 ```
 
-Når vi sammenligner lineær, kvadratisk og kubisk modell, finner vi:
+```{r}
+#| label: tbl-model-comp-ass3
+#| tbl-cap: Sammenligning av lineær, kvadratisk og kubisk modell.
+#| ft.arraystratch: 1.2
+model_comp_ass3 |> 
+  flextable() |> 
+  line_spacing(space = 0.5)
+```
+
+
+Når vi i @tbl-model-comp-ass3 sammenligner lineær, kvadratisk og kubisk modell, finner vi:
 • Lineær: R² ≈ 0,22; β(dev_log) ≈ 0,086, signifikant.
 • Kvadratisk: R² ≈ 0,24; ingen av dev_log og dev_log² signifikante.
 • Kubisk: R² ≈ 0,37; lavest AIC; samlet test signifikant, men individuelle koeffisienter svakt signifikante.
@@ -463,6 +571,7 @@ Figuren illustrerer at helningen mellom utvikling og ulikhet varierer etter utda
 
 
 ```{r}
+#| eval: false
 knitr::kable(
   tab_reg3,
   caption   = "Tabell X: Separate regresjoner for low, mid og high utdanningsnivå",
@@ -472,17 +581,45 @@ knitr::kable(
 )
 ```
 
+```{r}
+#| label: tbl-tab-reg3
+#| tbl-cap: Separate regresjoner for low, mid og high utdanningsnivå.
+#| ft.arraystretch: 1.2
+tab_reg3 |> 
+  rename(
+    "Parameter" = term,
+    "Estimat" = estimate,
+    "Std. feil" = std.error,
+    "t-verdi" = statistic,
+    "p-verdi" = p.value,
+    "Utdannings\ngruppe" = group
+    ) |> 
+  flextable() |> 
+  fontsize(size = 10, part = "all") |> 
+  line_spacing(space = 0.5) |> 
+  autofit() |> 
+  width(j=6, width = 2, unit = "cm") |> 
+  align(i = 1:6, j = 6, "center", part = "body")
+```
+
+
 Figuren illustrerer at helningen mellom utvikling og ulikhet varierer etter utdanningsnivå. Regionen med lavt utdanningsnivå viser en svak negativ helning uten signifikant effekt, mens gruppen med middels utdanningsnivå har en positiv, men ikke signifikant, sammenheng. For gruppen med høyt utdanningsnivå er helningen klart positiv, og den statistiske usikkerheten er lavere enn i de andre gruppene. Dette antyder at sammenhengen mellom utvikling og ulikhet er sterkest i regioner med høy utdanning.
 
 ```{r}
-knitr::kable(
-  tab_int_ass3,
-  caption   = "Tabell X: Interaksjonsmodell mellom utvikling (dev_log) og utdanningsnivå",
-  col.names = c("Parameter", "Estimat", "Std. feil", "t-verdi", "p-verdi"),
-  digits    = 3,
-  align     = "lrrrr"
-)
-
+#| label: tbl-tab-int-ass3
+#| tbl-cap: Interaksjonsmodell mellom utvikling (dev_log) og utdanningsnivå.
+#| ft.array.stretch: 1.2
+# knitr::kable(
+#   tab_int_ass3,
+#   col.names = c("Parameter", "Estimat", "Std. feil", "t-verdi", "p-verdi"),
+#   digits    = 3,
+#   align     = "lrrrr"
+# )
+tab_int_ass3 |> 
+  flextable() |> 
+  line_spacing(space = 0.5) |> 
+  fontsize(size = 10, part = "all") |> 
+  autofit()
 ```
 
 Regresjonsresultatene bekrefter mønsteret fra figuren: lav utdanning gir en negativ, men svært usikker helning; middels utdanning gir en positiv, men fortsatt ikke signifikant effekt; og høy utdanning gir en positiv og signifikant effekt. Resultatene må likevel tolkes med varsomhet fordi hvert delutvalg består av kun sju observasjoner.
@@ -492,18 +629,38 @@ Regresjonsresultatene bekrefter mønsteret fra figuren: lav utdanning gir en neg
 ## Panelestimat og faste effekter
 
 ```{r}
-knitr::kable(
-  panel_comp_ass3,
-  caption = "Tabell X: Sammenligning av panelmodeller (Land-FE, År-FE, NUTS2-FE, NUTS2+År-FE)",
-  col.names = c("Modell", "β (dev_log)", "Std.feil", "p-verdi", "R²", "Justert R²"),
-  digits = 3,
-  booktabs = TRUE,
-  align = "lrrrrr"
-) %>%
-  kableExtra::kable_styling(full_width = FALSE, position = "center")
-
+#| label: tbl-panel-comp-ass3
+#| tbl-cap: Sammenligning av panelmodeller (Land-FE, År-FE, NUTS2-FE, NUTS2+År-FE).
+#| ft.array.stretch: 1.2
+# knitr::kable(
+#   panel_comp_ass3,
+#   col.names = c("Modell", "β (dev_log)", "Std.feil", "p-verdi", "R²", "Justert R²"),
+#   digits = 3,
+#   booktabs = TRUE,
+#   align = "lrrrrr",
+#   format = "latex"
+# ) %>%
+#   kableExtra::kable_styling(full_width = FALSE, position = "center")
+panel_comp_ass3 |> 
+  rename(
+    "Modell" = modell,
+    "β (dev_log)" = beta_dev,
+    "Std.feil" = se_dev,
+    "p-verdi" = p_dev,
+    "R²" = R2,
+    "Justert R²" = adj_R2
+  ) |> 
+  as_flextable(
+    show_coltype = FALSE
+  ) |> 
+  line_spacing(space = 0.5) |> 
+  fontsize(size = 10, part = "all") |> 
+  colformat_double(digits = 4) |> 
+  autofit()  |> 
+  delete_part("footer") |> 
+  align(j = 2:6, align = "center", part = "body")
 ```
-Panelanalysen viser et tydelig skifte i sammenhengen mellom utvikling og ulikhet når vi går fra tverrsnittsspesifikasjoner til panelmodeller med faste effekter. I Land-FE-modellen estimeres utviklingseffekten til β_dev ≈ –0,011, en liten og ikke-signifikant sammenheng, med R² ≈ 0,68. Når vi kun kontrollerer for årseffekter (år-FE), endrer bildet seg: her er effekten positiv og klart signifikant (β_dev ≈ 0,090, p < 0,001), men forklaringskraften er lavere (R² ≈ 0,20).
+Panelanalysen gjengitt i @tbl-panel-comp-ass3 viser et tydelig skifte i sammenhengen mellom utvikling og ulikhet når vi går fra tverrsnittsspesifikasjoner til panelmodeller med faste effekter. I Land-FE-modellen estimeres utviklingseffekten til β_dev ≈ –0,011, en liten og ikke-signifikant sammenheng, med R² ≈ 0,68. Når vi kun kontrollerer for årseffekter (år-FE), endrer bildet seg: her er effekten positiv og klart signifikant (β_dev ≈ 0,090, p < 0,001), men forklaringskraften er lavere (R² ≈ 0,20).
 
 Det mest markerte mønsteret fremkommer imidlertid når vi inkluderer faste regionseffekter. I NUTS2-FE-modellen er utviklingskoeffisienten sterkt negativ og høyt signifikant (β_dev ≈ –1,99, p < 0,001), med svært høy forklaringskraft (R² ≈ 0,97). Kombinasjonen av både NUTS2-FE og år-FE gir et nesten identisk resultat (β_dev ≈ –2,00, p < 0,001), og modellen beholder like høy forklaringskraft (R² ≈ 0,98).
 

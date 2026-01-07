@@ -4,3 +4,19 @@ format: html
 ---
 
 ## Kommentarer
+
+-   Var problemer med `fig_ols_scatter` i ass4. Måtte helt tilbake til ass2 for å definere mod_B. Denne hadde av en eller annen grunn falt ut. Rekonstruerte mod_B så godt jeg kunne ut fra teksten.
+-   `fig_ols_scatter_ass3 <- ggplot(cs_2017, aes(dev_log, gini_w, label = NUTS2)` måtte endres til `fig_ols_scatter_ass3 <- ggplot(cs_2017, aes(dev_log, gini_w))`. Farlig å bare ignorere warnings.
+-   Dere bør bruke Quarto sitt caption og kryssreferansesystem. Jeg har endret for noen. Søk etter `#| label: tbl-`og `#| label: fid-` for å se hvordan det gjøres.
+    -   Det mange warnings av typen *WARNING (/Applications/quarto/share/filters/main.lua:17189) Raw LaTeX table found with non-tbl label: tab:unnamed-chunk-6*.
+-   Tror ikke at argumentet til `lang:` i YAML trenger å stå i anførselstegn. Har endret til `lang: nb`.
+-   `apa7.csl` manglet. Jeg har lagt den inn.
+-   Endret fra `slice_head(n=10)` til `head(10)` for `topp10_gini_2023` og `bunn10_gini_2023`. Gjør ingenforskjell for `gini_2023`har bare 4 observasjoner.
+-   `#| ft.arraystretch:` trengs for å gi kompakte flextable tabeller i pdf (latex). Lettere å få fine tabeller i pdf vha. typst. (men typst liker ikke at tabellene der har lagt inn ikke bruker Quarto for cations og kryssreferanse)
+-   Jeg liker best table caption under tabellen slik som figure alt har. Har derfor satt `tbl-cap-location: bottom`i YAML, men dette er en smakssak.
+-   Endret litt matte til latex. $R^2 \approx 0,34$ f.eks
+-   Lagt inn noen `\pagebreak[4]` dette er latex kode som sterkt oppfordrer til sideskift. Leses bare av latex (når pdf genereres). Dette for å unngå sideskift midt i tabeller.
+-   Har skrevet om. tabellene til Quarto og flextable så nå virker typst formatet også. Typst er langt raskere enn latex og tabellene er langt enklere å hanskes med enn for pdf (latex).
+
+
+

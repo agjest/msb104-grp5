@@ -13,6 +13,7 @@ format:
       text: |
         \usepackage{float}
   typst: default
+  docx: default
 lang: nb
 csl: "apa7.csl"
 execute:

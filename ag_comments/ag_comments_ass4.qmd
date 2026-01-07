@@ -17,6 +17,7 @@ format: html
 -   Endret litt matte til latex. $R^2 \approx 0,34$ f.eks
 -   Lagt inn noen `\pagebreak[4]` dette er latex kode som sterkt oppfordrer til sideskift. Leses bare av latex (når pdf genereres). Dette for å unngå sideskift midt i tabeller.
 -   Har skrevet om. tabellene til Quarto og flextable så nå virker typst formatet også. Typst er langt raskere enn latex og tabellene er langt enklere å hanskes med enn for pdf (latex).
+-   docx virker også rimelig bra. Bare tabell 4 som skaper trøbbel.
 
 
 
